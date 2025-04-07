@@ -1,0 +1,1 @@
+{"version":3,"file":"posix.js","sourceRoot":"","sources":["../../../../../packages/nx-unity/src/utils/posix.ts"],"names":[],"mappings":";;;AAAA,6BAA4B;AAE5B,SAAgB,SAAS,CAAC,GAAG,QAAkB;IAC7C,MAAM,UAAU,GAAG,IAAI,CAAC,IAAI,CAAC,GAAG,QAAQ,CAAC,CAAA;IACzC,OAAO,UAAU,CAAC,OAAO,CAAC,KAAK,EAAE,GAAG,CAAC,CAAA;AACvC,CAAC;AAHD,8BAGC"}
