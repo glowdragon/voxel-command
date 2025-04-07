@@ -1,0 +1,76 @@
+# System Files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.idea/
+# .vscode/
+.vs/
+.project/
+.classpath/
+.c9/
+.settings/
+.consulo/
+*.launch
+*.sublime-workspace
+*.booproj
+# *.csproj
+*.unityproj
+# *.sln
+*.suo
+*.svd
+*.tmp
+*.user
+*.userprefs
+*.VC.db
+*.opendb
+*.mdb
+*.mdb.meta
+*.pidb
+*.pidb.meta
+*.pdb
+*.pdb.meta
+# !.vscode/settings.json
+# !.vscode/tasks.json
+# !.vscode/launch.json
+# !.vscode/extensions.json
+
+# Node
+node_modules/
+
+# Misc
+coverage/
+typings/
+.sass-cache/
+*.log
+connect.lock
+sysinfo.txt
+
+# Nx
+dist/
+tmp/
+.nx/cache/
+.nx/workspace-data/
+*.env
+
+# .NET
+/apps/*/[Bb]in/
+/apps/*/[Oo]bj/
+
+# Unity
+/apps/*/[Bb]uild/
+/apps/*/[Bb]uilds/
+/apps/*/[Ee]xported[Oo]bj/
+/apps/*/[Ll]ibrary/
+/apps/*/[Ll]ogs/
+/apps/*/[Mm]emoryCaptures/
+/apps/*/[Oo]bj/
+/apps/*/[Rr]ecordings/
+/apps/*/[Tt]emp/
+/apps/*/[Uu]ser[Ss]ettings/
+/apps/*/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+/apps/*/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/apps/*/[Aa]ssets/[Ss]treamingAssets/aa/*
+/apps/*/ProjectSettings/ProjectCuratorSettings.json
+/apps/*/ProjectSettings/Packages/com.unity.probuilder/Settings.json
+.utmp/
