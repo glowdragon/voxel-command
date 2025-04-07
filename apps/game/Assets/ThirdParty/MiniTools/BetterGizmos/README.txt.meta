@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7cb9ad0f4c636a74884bd7aa8b372ecd
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215491
+  packageName: Better Gizmos
+  packageVersion: 1.0
+  assetPath: Assets/MiniTools/BetterGizmos/README.txt
+  uploadId: 544889

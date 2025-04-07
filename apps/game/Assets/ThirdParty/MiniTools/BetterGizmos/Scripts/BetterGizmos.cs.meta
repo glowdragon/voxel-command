@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: d7728ab27300ef14d853eb0d0db85e2f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215491
+  packageName: Better Gizmos
+  packageVersion: 1.0
+  assetPath: Assets/MiniTools/BetterGizmos/Scripts/BetterGizmos.cs
+  uploadId: 544889
