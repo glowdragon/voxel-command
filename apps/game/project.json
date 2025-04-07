@@ -1,0 +1,33 @@
+{
+    "name": "game",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "application",
+    "sourceRoot": "apps/game/Assets",
+    "targets": {
+      "build": {
+        "executor": "nx-unity:build",
+        "configurations": {
+          "windows": {
+            "executeMethod": "BuildCommands.BuildWindows"
+          },
+          "macos": {
+            "executeMethod": "BuildCommands.BuildMacOS"
+          },
+          "linux": {
+            "executeMethod": "BuildCommands.BuildLinux"
+          },
+          "webgl": {
+            "executeMethod": "BuildCommands.BuildWebGL"
+          },
+          "android": {
+            "executeMethod": "BuildCommands.BuildAndroid"
+          },
+          "ios": {
+            "executeMethod": "BuildCommands.BuildIOS"
+          }
+        },
+        "defaultConfiguration": "windows"
+      }
+    }
+  }
+  
