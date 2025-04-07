@@ -1,0 +1,14 @@
+/* Set the font for the entire preview */
+body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* Specifically target code blocks */
+pre code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Source Code Pro', monospace !important;
+}
+
+/* Target inline code */
+code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Source Code Pro', monospace !important;
+}
