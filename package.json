@@ -2,9 +2,13 @@
   "name": "@voxel-command/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "prepare": "node -e \"process.platform === 'win32' && process.exit(1)\" || nx g @nx-dotnet/core:restore && nx g @nx-dotnet/core:restore"
+  },
+  "nx": {},
   "private": true,
   "devDependencies": {
+    "@nx-dotnet/core": "^2.5.0",
     "@nx/js": "20.7.1",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
