@@ -1,0 +1,63 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+# Project Assignment
+
+## Overview
+Create a 3D prototype in Unity where two opposing teams of units battle each other on a navmesh. This prototype should demonstrate strategic gameplay elements through unit movement, combat mechanics, and progression systems.
+
+### Core Gameplay Elements
+
+#### Units
+- Create two distinct teams (e.g., Red vs Blue)
+- Units can be represented as simple 3D objects
+- Units must navigate the environment using Unity's NavMesh system
+- Implement automatic targeting system where units identify and engage living members of the opposing team
+- Combat should only occur when units are within a specified distance threshold
+
+#### Progression System
+- Units that successfully eliminate enemy units should "level up"
+- Leveled units must gain enhanced capabilities, such as:
+  - Improved combat statistics (health, damage output, etc.)
+  - Enhanced projectiles or attack mechanisms
+  - Visual indication of level/power
+
+#### Player Interaction
+- Implement at least one meaningful form of player interaction with the system
+- Possible interaction mechanisms include:
+  - Strategic command system for units
+  - Unit upgrade mechanics
+  - Direct control over a specific unit's movement
+  - Resource management
+  - Deployment of structures or defenses
+
+## Project Deliverables
+- Functional Unity project with core mechanics implemented
+- Clean, commented code with appropriate design patterns
+- README documentation with:
+  - Setup instructions
+  - Control explanations
+  - Design decisions
+  - Any third-party assets or packages used
+
+## Evaluation Criteria
+- Implementation of all core requirements
+- Code quality and organization
+- Gameplay balance and engagement
+- Creative extensions beyond the base requirements
+- Technical performance and stability
+
+# Creative Extension - LLM Integration
+
+As an innovative enhancement to the base project, consider implementing an LLM (Large Language Model) integration that allows for natural language interaction within the game. This would enable players to:
+
+- Issue complex commands to units through text prompts
+- Examples:
+  - "Form a defensive perimeter around the central objective"
+  - "Send half my forces to flank from the east"
+  - "Focus fire on the highest-level enemy unit"
+
+The LLM would interpret these natural language instructions and translate them into appropriate game actions, creating a unique command interface beyond traditional RTS controls.
