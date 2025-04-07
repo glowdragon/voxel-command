@@ -74,3 +74,11 @@ tmp/
 /apps/*/ProjectSettings/ProjectCuratorSettings.json
 /apps/*/ProjectSettings/Packages/com.unity.probuilder/Settings.json
 .utmp/
+
+# Additional Unity ignores
+/apps/*/[Aa]ssets/Plugins/
+/apps/*/[Aa]ssets/ThirdParty/
+/apps/*/[Pp]ackages/com.singularitygroup.hotreload/
+/apps/*/[Cc]rash[Rr]eports/
+/apps/*/[Aa]ssets/**/*.meta
+/apps/*/[Aa]ssets/**/*.unitypackage
