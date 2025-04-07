@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 352fa700bfbcc80458e43f964e42397c
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215491
+  packageName: Better Gizmos
+  packageVersion: 1.0
+  assetPath: Assets/MiniTools/BetterGizmos/Scripts/VerticesTables.cs
+  uploadId: 544889
