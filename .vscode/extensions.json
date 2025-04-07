@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "nrwl.angular-console",
-    "visualstudiotoolsforunity.vstuc"
+    "visualstudiotoolsforunity.vstuc",
+    "csharpier.csharpier-vscode"
   ]
 }
