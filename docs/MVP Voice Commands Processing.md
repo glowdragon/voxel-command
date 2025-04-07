@@ -1,9 +1,3 @@
----
-description: 
-globs: 
-alwaysApply: false
----
-
 ## MVP Voice Command Workflow
 
 This describes the simplified voice command processing for the Minimum Viable Product (MVP), focused on direct unit control.
