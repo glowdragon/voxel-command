@@ -1,6 +1,4 @@
-﻿namespace VoxelCommand.Core;
-
-public class Class1
+﻿namespace VoxelCommand.Core
 {
-
+    public class Class1 { }
 }
