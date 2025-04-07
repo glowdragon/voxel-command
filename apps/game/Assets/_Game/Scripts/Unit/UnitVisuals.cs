@@ -22,6 +22,9 @@ namespace VoxelCommand.Client
 
         [SerializeField]
         private Image _healthFillImage;
+        
+        [SerializeField]
+        private GameObject _worldspaceCanvas;
 
         private Unit _unit;
 
@@ -32,34 +35,23 @@ namespace VoxelCommand.Client
             _unit = unit;
 
             ApplyTeamVisuals();
-            SetupSubscriptions();
+            
+            // Disable the worldspace UI since we'll show it in the HUD
+            if (_worldspaceCanvas != null)
+            {
+                _worldspaceCanvas.SetActive(false);
+            }
         }
 
         private void SetupSubscriptions()
         {
-            // Level subscription
-            _unit
-                .State.Level.Subscribe(level =>
-                {
-                    if (_levelText != null)
-                    {
-                        _levelText.text = level.ToString();
-                    }
-                })
-                .AddTo(_disposables);
-
-            // Health subscription
-            _unit.State.Health.Merge(_unit.State.MaxHealth).Subscribe(_ => UpdateHealthBar()).AddTo(_disposables);
+            // We're not setting up the health and level subscriptions
+            // since they'll be displayed in the HUD instead
         }
 
         private void UpdateHealthBar()
         {
-            if (_healthFillImage == null)
-                return;
-
-            float health = _unit.State.Health.Value;
-            float maxHealth = _unit.State.MaxHealth.Value;
-            _healthFillImage.fillAmount = maxHealth > 0 ? health / maxHealth : 0;
+            // We're not updating the health bar since it'll be displayed in the HUD
         }
 
         private void ApplyTeamVisuals()

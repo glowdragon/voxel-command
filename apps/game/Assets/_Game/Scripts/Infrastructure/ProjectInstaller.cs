@@ -18,8 +18,9 @@ namespace VoxelCommand.Client
         public override void InstallBindings()
         {
             Container.BindInstance(_defaultUnitConfig).AsSingle();
-            
+
             Container.Bind<IUnitStatsCalculator>().To<UnitStatsCalculator>().AsSingle();
+            Container.Bind<INameGenerator>().To<NameGenerator>().AsSingle();
         }
     }
 }
