@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 7f7ef17c21ec457409514db055acb92a
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 30804
+  packageName: Fighter Pack Bundle
+  packageVersion: 2.3
+  assetPath: Assets/Fighter Pack Bundle/Code/FighterAnimationDemo.cs
+  uploadId: 327939
