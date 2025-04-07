@@ -1,9 +1,3 @@
----
-description: 
-globs: 
-alwaysApply: false
----
-
 # MVP Character System
 
 ## Introduction
