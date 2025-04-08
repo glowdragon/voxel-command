@@ -50,7 +50,8 @@
     "com.unity.modules.video": "1.0.0",
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
-    "com.unity.modules.xr": "1.0.0"
+    "com.unity.modules.xr": "1.0.0",
+    "com.nobi.roundedcorners": "3.5.0"
   },
   "scopedRegistries": [
     {
@@ -60,6 +61,7 @@
         "com.bgtools.playerprefseditor",
         "com.dbrizov.naughtyattributes",
         "com.neuecc.unirx",
+        "com.nobi.roundedcorners",
         "com.openupm",
         "com.svermeulen.extenject"
       ]

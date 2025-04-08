@@ -27,6 +27,13 @@
       "dependencies": {},
       "url": "https://package.openupm.com"
     },
+    "com.nobi.roundedcorners": {
+      "version": "3.5.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://package.openupm.com"
+    },
     "com.singularitygroup.hotreload": {
       "version": "file:com.singularitygroup.hotreload",
       "depth": 0,

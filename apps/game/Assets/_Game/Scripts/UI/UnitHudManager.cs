@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using UniRx;
+using UnityEngine;
+using UnityEngine.UI;
 using Zenject;
 
 namespace VoxelCommand.Client
@@ -10,27 +10,66 @@ namespace VoxelCommand.Client
     public class UnitHudManager : DisposableComponent
     {
         [Header("References")]
-        [SerializeField] private Transform _playerUnitsContainer;
-        [SerializeField] private Transform _enemyUnitsContainer;
-        [SerializeField] private GameObject _unitHudElementPrefab;
+        [SerializeField]
+        private Transform _playerUnitsContainer;
+
+        [SerializeField]
+        private Transform _enemyUnitsContainer;
+
+        [SerializeField]
+        private GameObject _unitHudElementPrefab;
 
         [Header("Settings")]
-        [SerializeField] private Color _playerHealthColor = Color.green;
-        [SerializeField] private Color _enemyHealthColor = Color.red;
-        [SerializeField] private int _maxDisplayedUnits = 10;
+        [SerializeField]
+        private Sprite _playerAvatarMale;
 
-        [Inject] private BattleManager _battleManager;
+        [SerializeField]
+        private Sprite _playerAvatarFemale;
+
+        [SerializeField]
+        private Sprite _enemyAvatarMale;
+
+        [SerializeField]
+        private Sprite _enemyAvatarFemale;
+
+        [SerializeField]
+        private Color _playerBorderColor = Color.blue;
+
+        [SerializeField]
+        private Color _enemyBorderColor = Color.red;
+
+        [SerializeField]
+        private Color _playerBackgroundColor = Color.blue;
+
+        [SerializeField]
+        private Color _enemyBackgroundColor = Color.red;
+
+        [SerializeField]
+        private Color _playerDarkBackgroundColor = Color.black;
+
+        [SerializeField]
+        private Color _enemyDarkBackgroundColor = Color.black;
+
+        [SerializeField]
+        private Color _playerHealthColor = Color.blue;
+
+        [SerializeField]
+        private Color _enemyHealthColor = Color.red;
+
+        [SerializeField]
+        private int _maxDisplayedUnits = 10;
+
+        [Inject]
+        private BattleManager _battleManager;
 
         private Dictionary<Unit, UnitHudElement> _unitHudElements = new Dictionary<Unit, UnitHudElement>();
-        
+
         private void Start()
         {
             // Subscribe to battle manager's units
-            Observable.EveryUpdate()
-                .Subscribe(_ => UpdateHudElements())
-                .AddTo(_disposables);
+            Observable.EveryUpdate().Subscribe(_ => UpdateHudElements()).AddTo(_disposables);
         }
-        
+
         private void UpdateHudElements()
         {
             // Get all units from battle manager
@@ -76,7 +115,7 @@ namespace VoxelCommand.Client
         {
             // Choose the appropriate container based on team
             Transform container = team == Team.Player ? _playerUnitsContainer : _enemyUnitsContainer;
-            
+
             // Check if we've reached the maximum displayed units for this team
             if (container.childCount >= _maxDisplayedUnits)
             {
@@ -87,48 +126,45 @@ namespace VoxelCommand.Client
             var hudElement = Instantiate(_unitHudElementPrefab, container).GetComponent<UnitHudElement>();
             hudElement.name = $"{team} Unit {unit.name} HUD";
 
-            // Get references to the health bar and level text
-            Image healthFillImage = hudElement.HealthFillImage;
-            TextMeshProUGUI levelText = hudElement.LevelText;
-            TextMeshProUGUI nameText = hudElement.NameText;
+            // Set initial values using the setter methods
+            Sprite avatar = team == Team.Player ? _playerAvatarMale : _enemyAvatarMale;
+            Color healthColor = team == Team.Player ? _playerHealthColor : _enemyHealthColor;
+            Color borderColor = team == Team.Player ? _playerBorderColor : _enemyBorderColor;
+            Color backgroundColor = team == Team.Player ? _playerBackgroundColor : _enemyBackgroundColor;
+            Color darkBackgroundColor = team == Team.Player ? _playerDarkBackgroundColor : _enemyDarkBackgroundColor;
 
-            // Set the appropriate color
-            if (healthFillImage != null)
-            {
-                healthFillImage.color = team == Team.Player ? _playerHealthColor : _enemyHealthColor;
-            }
+            hudElement.SetBorderColors(borderColor);
+            hudElement.SetBackgroundColors(backgroundColor, darkBackgroundColor);
+            hudElement.SetAvatar(avatar);
+            hudElement.SetHealthColor(darkBackgroundColor, healthColor);
+            hudElement.SetManaColor(darkBackgroundColor);
+            hudElement.SetName(unit.name);
 
-            // Set the unit name
-            if (nameText != null)
-            {
-                nameText.text = unit.name;
-            }
+            // Initial health setup
+            float initialHealth = unit.State.Health.Value;
+            float initialMaxHealth = unit.State.MaxHealth.Value;
+            hudElement.SetHealth(initialHealth, initialMaxHealth);
 
-            // Set up the subscriptions for health and level updates
-            if (healthFillImage != null)
-            {
-                unit.State.Health.Merge(unit.State.MaxHealth)
-                    .Subscribe(_ => 
-                    {
-                        float health = unit.State.Health.Value;
-                        float maxHealth = unit.State.MaxHealth.Value;
-                        healthFillImage.fillAmount = maxHealth > 0 ? health / maxHealth : 0;
-                    })
-                    .AddTo(_disposables);
-            }
+            // Initial level setup
+            int initialLevel = unit.State.Level.Value;
+            hudElement.SetLevel(initialLevel);
 
-            if (levelText != null)
-            {
-                unit.State.Level
-                    .Subscribe(level => 
-                    {
-                        levelText.text = level.ToString();
-                    })
-                    .AddTo(_disposables);
-            }
+            // Set up subscriptions for health and level updates
+            unit.State.Health.Merge(unit.State.MaxHealth)
+                .Subscribe(_ =>
+                {
+                    hudElement.SetHealth(unit.State.Health.Value, unit.State.MaxHealth.Value);
+                })
+                .AddTo(_disposables);
+
+            unit.State.Level.Subscribe(level =>
+                {
+                    hudElement.SetLevel(level);
+                })
+                .AddTo(_disposables);
 
             // Store the HUD element in the dictionary
             _unitHudElements.Add(unit, hudElement);
         }
     }
-} 
+}
