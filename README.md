@@ -4,7 +4,7 @@ A tactical strategy game with voice command integration and character-based game
 
 ## Project Overview
 
-Voxel Command is a Unity-based tactical strategy game where players control units through voice commands. The game features:
+Voxel Command is a tactical strategy game where players control units through voice commands. The game features:
 
 - Voice command recognition to control your units
 - NPCs with distinct character traits that affect how they follow orders

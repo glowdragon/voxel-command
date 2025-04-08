@@ -30,8 +30,6 @@ namespace VoxelCommand.Client
 
         public void Initialize(Unit unit)
         {
-            Dispose();
-
             _unit = unit;
 
             ApplyTeamVisuals();

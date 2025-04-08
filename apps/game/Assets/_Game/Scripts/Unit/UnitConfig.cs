@@ -13,6 +13,12 @@ namespace VoxelCommand.Client
         [Range(1.0f, 3.0f)]
         public float ExperienceGrowthFactor = 1.5f;
         
+        [Tooltip("Experience points gained per damage point dealt")]
+        public float ExperiencePerDamage = 0.5f;
+        
+        [Tooltip("Experience points gained per kill")]
+        public int ExperiencePerKill = 25;
+        
         [Header("Health Settings")]
         [Tooltip("Base health value")]
         public float BaseHealth = 100f;

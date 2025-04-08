@@ -6,21 +6,44 @@ namespace VoxelCommand.Client
     public interface IUnitStatsCalculator
     {
         int CalculateExperienceForLevel(UnitConfig config, UnitState state);
+        int CalculateExperienceForLevel(UnitConfig config, int level);
+        int CalculateExperienceForNextLevel(UnitConfig config, UnitState state);
+        int CalculateExperienceForNextLevel(UnitConfig config, int level);
         int CalculateLevelFromExperience(UnitConfig config, UnitState state);
         float CalculateMaxHealth(UnitConfig config, UnitState state);
+        float CalculateMaxHealth(UnitConfig config, int healthRank);
         float CalculateDamageOutput(UnitConfig config, UnitState state);
+        float CalculateDamageOutput(UnitConfig config, int damageRank);
         float CalculateIncomingDamageReduction(UnitConfig config, UnitState state);
+        float CalculateIncomingDamageReduction(UnitConfig config, int defenseRank);
         float CalculateMovementSpeed(UnitConfig config, UnitState state);
+        float CalculateMovementSpeed(UnitConfig config, int speedRank);
     }
 
     public class UnitStatsCalculator : IUnitStatsCalculator
     {
         public int CalculateExperienceForLevel(UnitConfig config, UnitState state)
         {
-            int level = state.Level.Value;
+            return CalculateExperienceForLevel(config, state.Level.Value);
+        }
+
+        public int CalculateExperienceForLevel(UnitConfig config, int level)
+        {
             if (level <= 1) return 0;
             
             return Mathf.RoundToInt(config.BaseExperience * Mathf.Pow(level - 1, config.ExperienceGrowthFactor));
+        }
+
+        public int CalculateExperienceForNextLevel(UnitConfig config, UnitState state)
+        {
+            return CalculateExperienceForNextLevel(config, state.Level.Value);
+        }
+
+        public int CalculateExperienceForNextLevel(UnitConfig config, int level)
+        {
+            if (level <= 0) return 0;
+            
+            return Mathf.RoundToInt(config.BaseExperience * Mathf.Pow(level, config.ExperienceGrowthFactor));
         }
 
         public int CalculateLevelFromExperience(UnitConfig config, UnitState state)
@@ -37,31 +60,44 @@ namespace VoxelCommand.Client
             return level;
         }
 
-        private int CalculateExperienceForNextLevel(UnitConfig config, int level)
-        {
-            if (level <= 0) return 0;
-            
-            return Mathf.RoundToInt(config.BaseExperience * Mathf.Pow(level, config.ExperienceGrowthFactor));
-        }
-
         public float CalculateMaxHealth(UnitConfig config, UnitState state)
         {
-            return config.BaseHealth + (state.HealthRank.Value * config.HealthPerPoint);
+            return CalculateMaxHealth(config, state.HealthRank.Value);
+        }
+
+        public float CalculateMaxHealth(UnitConfig config, int healthRank)
+        {
+            return config.BaseHealth + (healthRank * config.HealthPerPoint);
         }
 
         public float CalculateDamageOutput(UnitConfig config, UnitState state)
         {
-            return config.BaseDamage + (state.DamageRank.Value * config.DamagePerPoint);
+            return CalculateDamageOutput(config, state.DamageRank.Value);
+        }
+
+        public float CalculateDamageOutput(UnitConfig config, int damageRank)
+        {
+            return config.BaseDamage + (damageRank * config.DamagePerPoint);
         }
 
         public float CalculateIncomingDamageReduction(UnitConfig config, UnitState state)
         {
-            return config.BaseDefense + (state.DefenseRank.Value * config.DefensePerPoint);
+            return CalculateIncomingDamageReduction(config, state.DefenseRank.Value);
+        }
+
+        public float CalculateIncomingDamageReduction(UnitConfig config, int defenseRank)
+        {
+            return config.BaseDefense + (defenseRank * config.DefensePerPoint);
         }
 
         public float CalculateMovementSpeed(UnitConfig config, UnitState state)
         {
-            return config.BaseSpeed + (state.SpeedRank.Value * config.SpeedPerPoint);
+            return CalculateMovementSpeed(config, state.SpeedRank.Value);
+        }
+
+        public float CalculateMovementSpeed(UnitConfig config, int speedRank)
+        {
+            return config.BaseSpeed + (speedRank * config.SpeedPerPoint);
         }
     }
 }

@@ -14,11 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   BaseExperience: 100
   ExperienceGrowthFactor: 1.5
-  BaseHealth: 100
+  ExperiencePerDamage: 0.3
+  ExperiencePerKill: 250
+  BaseHealth: 30
   HealthPerPoint: 10
   BaseDamage: 10
   DamagePerPoint: 2
-  BaseDefense: 5
-  DefensePerPoint: 2
+  BaseDefense: 0
+  DefensePerPoint: 1
   BaseSpeed: 3
-  SpeedPerPoint: 0.5
+  SpeedPerPoint: 0.2

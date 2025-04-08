@@ -1,4 +1,5 @@
-﻿using UniRx;
+﻿using System;
+using UniRx;
 using UnityEngine;
 using Zenject;
 
@@ -26,11 +27,12 @@ namespace VoxelCommand.Client
 
         private Team _team;
         public Team Team => _team;
+
+        private readonly Subject<Unit> _onSkillPointGained = new();
+        public IObservable<Unit> OnSkillPointGained => _onSkillPointGained;
         
         public void Initialize(UnitConfig config, Team team)
         {
-            Dispose();
-            
             _config = config;
             _team = team;
 
@@ -54,6 +56,17 @@ namespace VoxelCommand.Client
             
             // Initialize health
             _state.Health.Value = _state.MaxHealth.Value;
+            
+            // Initialize battle stats
+            ResetBattleStats();
+        }
+
+        // Implement the OnDispose hook instead
+        protected override void OnDispose()
+        {
+            _onSkillPointGained.OnCompleted();
+            _onSkillPointGained.Dispose();
+            // Base call is handled by DisposableComponent's Dispose
         }
         
         private void SetupSubscriptions()
@@ -84,6 +97,12 @@ namespace VoxelCommand.Client
                     // Calculate stat points based on level change (can be positive or negative)
                     int levelDifference = currentLevel - previousLevel;
                     _state.AvailableStatPoints.Value += levelDifference;
+
+                    // Fire event if skill points were gained
+                    if (levelDifference > 0)
+                    {
+                        _onSkillPointGained.OnNext(this);
+                    }
                 })
                 .AddTo(_disposables);
 
@@ -114,6 +133,30 @@ namespace VoxelCommand.Client
                     _state.MovementSpeed.Value = _statsCalculator.CalculateMovementSpeed(Config, _state);
                 })
                 .AddTo(_disposables);
+        }
+
+        public void AddExperience(int amount)
+        {
+            if (amount <= 0) return;
+            
+            _state.Experience.Value += amount;
+            Debug.Log($"{name} gained {amount} experience! Total: {_state.Experience.Value}");
+        }
+        
+        public void RecordDamageDealt(float damage)
+        {
+            _state.DamageDealt.Value += damage;
+        }
+        
+        public void RecordKill()
+        {
+            _state.Kills.Value += 1;
+        }
+        
+        public void ResetBattleStats()
+        {
+            _state.DamageDealt.Value = 0;
+            _state.Kills.Value = 0;
         }
 
         // Methods for player to allocate stat points

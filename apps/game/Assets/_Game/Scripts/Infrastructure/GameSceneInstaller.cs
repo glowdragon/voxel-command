@@ -11,6 +11,9 @@ public class GameSceneInstaller : MonoInstaller
     private UnitManager _unitManager;
 
     [SerializeField]
+    private ProgressionManager _progressionManager;
+
+    [SerializeField]
     private GameObject _unitPrefab;
 
     public override void InstallBindings()
@@ -18,6 +21,7 @@ public class GameSceneInstaller : MonoInstaller
         // Bind scene-specific references
         Container.BindInstance(_battleManager).AsSingle();
         Container.BindInstance(_unitManager).AsSingle();
+        Container.BindInstance(_progressionManager).AsSingle();
 
         // Factory for creating units
         Container.BindFactory<Unit, UnitFactory>().FromComponentInNewPrefab(_unitPrefab).UnderTransformGroup("Units").AsSingle();

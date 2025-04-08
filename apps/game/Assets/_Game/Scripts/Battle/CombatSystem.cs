@@ -1,26 +1,25 @@
 using System.Collections.Generic;
-using UnityEngine;
 using UniRx;
+using UnityEngine;
 
 namespace VoxelCommand.Client
 {
-    public class CombatSystem : MonoBehaviour
+    public class CombatSystem : DisposableComponent
     {
-        [SerializeField]
-        private float _aiUpdateInterval = 1f; // Time between AI updates
-        
-        [SerializeField]
-        private float _engageDistance = 15f; // Distance at which enemies will engage
-        
-        [SerializeField]
-        private float _retargetProbability = 0.1f; // Chance per AI update to reconsider target
-        
-        [SerializeField]
-        private bool _aiEnabled = true; // Toggle for AI
+        [SerializeField, Tooltip("Time between AI updates")]
+        private float _aiUpdateInterval = 1f;
+
+        [SerializeField, Tooltip("Distance at which enemies will engage")]
+        private float _engageDistance = 15f;
+
+        [SerializeField, Tooltip("Chance per AI update to reconsider target")]
+        private float _retargetProbability = 0.1f;
+
+        [SerializeField, Tooltip("Toggle for AI")]
+        private bool _aiEnabled = true;
 
         private BattleManager _battleManager;
-        private float _lastAiUpdateTime;
-        
+
         private void Awake()
         {
             _battleManager = GetComponent<BattleManager>();
@@ -30,69 +29,75 @@ namespace VoxelCommand.Client
                 enabled = false;
             }
         }
-        
+
         private void Start()
         {
-            _lastAiUpdateTime = 0f;
+            SetupAiUpdateInterval();
         }
-        
-        private void Update()
+
+        private void SetupAiUpdateInterval()
         {
-            if (!_aiEnabled) return;
-            
-            // Only update AI at specified intervals to save performance
-            if (Time.time - _lastAiUpdateTime < _aiUpdateInterval) return;
-            _lastAiUpdateTime = Time.time;
-            
-            UpdateAI();
+            // Dispose any existing subscriptions
+            _disposables.Clear();
+
+            if (_aiEnabled)
+            {
+                // Create an Observable that emits every _aiUpdateInterval seconds
+                Observable
+                    .Interval(System.TimeSpan.FromSeconds(_aiUpdateInterval))
+                    .Where(_ => _aiEnabled) // Only proceed if AI is enabled
+                    .Subscribe(_ => UpdateAI())
+                    .AddTo(_disposables);
+            }
         }
-        
+
+        private void OnEnable()
+        {
+            SetupAiUpdateInterval();
+        }
+
+        private void OnDisable()
+        {
+            _disposables.Clear();
+        }
+
         /// <summary>
         /// Updates AI for all units
         /// </summary>
         private void UpdateAI()
         {
-            // Update enemy AI
-            UpdateTeamAI(_battleManager.GetEnemyUnits(), _battleManager.GetPlayerUnits());
-            
-            // If you want AI for player team too (for automatic battles)
             UpdateTeamAI(_battleManager.GetPlayerUnits(), _battleManager.GetEnemyUnits());
+            UpdateTeamAI(_battleManager.GetEnemyUnits(), _battleManager.GetPlayerUnits());
         }
-        
+
         /// <summary>
         /// Updates AI for a specific team, targeting units from the opposing team
         /// </summary>
         private void UpdateTeamAI(List<Unit> teamUnits, List<Unit> opposingTeamUnits)
         {
-            if (teamUnits == null || opposingTeamUnits == null)
-                return;
-                
             foreach (Unit unit in teamUnits)
             {
-                if (unit == null || unit.State.Health.Value <= 0 || unit.Controller == null)
+                if (unit == null || unit.Controller == null || unit.State.Health.Value <= 0)
                     continue;
-                    
+
                 UnitController controller = unit.Controller;
-                
+
                 // Always find the nearest enemy
                 Unit nearestEnemy = controller.FindNearestEnemy(opposingTeamUnits);
 
-                // --- Logic based on whether an enemy is found --- 
+                // --- Logic based on whether an enemy is found ---
                 if (nearestEnemy != null)
                 {
-                    float distanceToEnemy = Vector3.Distance(
-                        unit.transform.position, 
-                        nearestEnemy.transform.position
-                    );
-                    
+                    float distanceToEnemy = Vector3.Distance(unit.transform.position, nearestEnemy.transform.position);
+
                     bool isEngaged = IsUnitEngaged(controller);
-                    
-                    // --- Logic if unit is currently engaged --- 
+
+                    // --- Logic if unit is currently engaged ---
                     if (isEngaged)
                     {
                         // Periodically check if a closer target is available
-                        if (Random.value < _retargetProbability) 
-                        {                            
+                        if (Random.value < _retargetProbability)
+                        {
                             // Check if the nearest enemy is different from the current one and within range
                             // Assuming UnitController has a CurrentTarget property or similar
                             if (nearestEnemy != controller.CurrentTarget && distanceToEnemy <= _engageDistance)
@@ -102,10 +107,10 @@ namespace VoxelCommand.Client
                             // Optional: Could add logic here if the current target moved out of range
                         }
                     }
-                    // --- Logic if unit is NOT currently engaged --- 
-                    else 
+                    // --- Logic if unit is NOT currently engaged ---
+                    else
                     {
-                         // If enemy is within engage distance, engage them
+                        // If enemy is within engage distance, engage them
                         if (distanceToEnemy <= _engageDistance)
                         {
                             controller.EngageTarget(nearestEnemy);
@@ -118,27 +123,24 @@ namespace VoxelCommand.Client
                         }
                     }
                 }
-                // --- Logic if NO enemy is found --- 
+                // --- Logic if NO enemy is found ---
                 else
                 {
                     // If the unit was engaged, maybe disengage explicitly?
                     // For now, just apply patrol behavior
-                    
+
                     // No enemies found, could implement patrol behavior here
                     if (Random.value < 0.1f) // 10% chance to move randomly
                     {
-                        Vector3 randomPosition = unit.transform.position + new Vector3(
-                            Random.Range(-10f, 10f),
-                            0f,
-                            Random.Range(-10f, 10f)
-                        );
-                        
+                        Vector3 randomPosition =
+                            unit.transform.position + new Vector3(Random.Range(-10f, 10f), 0f, Random.Range(-10f, 10f));
+
                         controller.MoveToRandomPositionNear(randomPosition, 5f);
                     }
                 }
             }
         }
-        
+
         /// <summary>
         /// Check if a unit is already engaged in combat
         /// </summary>
@@ -149,4 +151,4 @@ namespace VoxelCommand.Client
             return controller.IsInCombat;
         }
     }
-} 
+}

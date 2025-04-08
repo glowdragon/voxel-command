@@ -28,14 +28,14 @@ namespace VoxelCommand.Client
         private float _rotationSpeed = 10f;
 
         // Combat parameters
-        [SerializeField]
-        private float _attackRange = 1f; // Distance from which unit can attack
+        [SerializeField, Tooltip("Distance from which unit can attack")]
+        private float _attackRange = 1f;
 
-        [SerializeField]
-        private float _detectionRange = 5f; // Distance at which unit detects enemies
+        [SerializeField, Tooltip("Distance at which unit detects enemies")]
+        private float _detectionRange = 5f;
 
-        [SerializeField]
-        private float _attackCooldown = 1f; // Time between attacks
+        [SerializeField, Tooltip("Time between attacks")]
+        private float _attackCooldown = 1f;
 
         private Unit _currentTarget;
         private float _lastAttackTime;
@@ -47,7 +47,6 @@ namespace VoxelCommand.Client
 
         public void Initialize(Unit unit)
         {
-            Dispose();
             _unit = unit;
 
             SetupSubscriptions();
@@ -176,33 +175,36 @@ namespace VoxelCommand.Client
                 // Calculate damage
                 float damage = _unit.State.DamageOutput.Value;
 
-                // Apply damage to target after a small delay (matching animation)
-                Observable
-                    .Timer(System.TimeSpan.FromSeconds(0.12f))
-                    .Subscribe(_ => ApplyDamage(_currentTarget, damage))
-                    .AddTo(_disposables);
+                // Apply damage to target
+                float targetHealth = _currentTarget.State.Health.Value;
+                float targetDamageReduction = _currentTarget.State.IncomingDamageReduction.Value;
+                
+                // Calculate final damage after reduction
+                float finalDamage = Mathf.Max(1, damage * (1 - targetDamageReduction));
+                
+                // Apply damage to target's health
+                _currentTarget.State.Health.Value = Mathf.Max(0, targetHealth - finalDamage);
+                
+                // Record damage dealt for XP calculation
+                _unit.RecordDamageDealt(finalDamage);
+                
+                // If target died from this attack, record the kill
+                if (_currentTarget.State.Health.Value <= 0)
+                {
+                    // Record kill for XP calculation
+                    _unit.RecordKill();
+                    
+                    // Clear current target since it's dead
+                    _currentTarget = null;
+                    IsInCombat = false;
+                }
             }
             else
             {
-                // Move closer to target if out of range
-                MoveToPosition(_currentTarget.transform.position);
+                // Move closer to target if not in range
+                _navMeshAgent.SetDestination(_currentTarget.transform.position);
+                _isMoving = true;
             }
-        }
-
-        // Apply damage to a target
-        private void ApplyDamage(Unit target, float damage)
-        {
-            if (target == null || target.State.Health.Value <= 0)
-                return;
-
-            // Calculate final damage after reduction
-            float damageReduction = target.State.IncomingDamageReduction.Value;
-            float finalDamage = Mathf.Max(1f, damage - damageReduction);
-
-            // Apply damage
-            target.State.Health.Value -= finalDamage;
-
-            Debug.Log($"{_unit.name} dealt {finalDamage} damage to {target.name}");
         }
 
         // Check if current target is valid and in range
@@ -238,6 +240,58 @@ namespace VoxelCommand.Client
 
                 // Attack if possible
                 AttackTarget();
+            }
+        }
+
+        /// <summary>
+        /// Resets combat state for the unit, used when reviving between rounds
+        /// </summary>
+        public void ResetCombatState()
+        {
+            // Clear combat flags
+            _currentTarget = null;
+            IsInCombat = false;
+            _lastAttackTime = 0f;
+            
+            // Stop any navigation in progress
+            if (_navMeshAgent != null)
+            {
+                // Re-enable the NavMeshAgent if it was disabled (e.g., when the unit died)
+                _navMeshAgent.enabled = true;
+                
+                _navMeshAgent.ResetPath();
+                _navMeshAgent.isStopped = true;
+                _navMeshAgent.isStopped = false;
+                _navMeshAgent.stoppingDistance = 0.1f;
+            }
+            
+            _isMoving = false;
+            
+            // Play revive animation if the unit was dead
+            if (_animationController != null)
+            {
+                _animationController.PlayReviveAnimation();
+            }
+        }
+
+        /// <summary>
+        /// Makes the unit perform a victory dance
+        /// </summary>
+        public void PlayVictoryAnimation()
+        {
+            if (_animationController != null)
+            {
+                // Stop movement
+                if (_navMeshAgent != null && _navMeshAgent.enabled)
+                {
+                    _navMeshAgent.isStopped = true;
+                    _navMeshAgent.ResetPath();
+                }
+                
+                _isMoving = false;
+                
+                // Play victory animation
+                _animationController.PlayVictoryAnimation();
             }
         }
 

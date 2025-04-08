@@ -83,6 +83,9 @@ namespace VoxelCommand.Client
         private readonly int _lightHitTriggerHash = Animator.StringToHash("LightHitTrigger");
         private readonly int _rangeAttack1TriggerHash = Animator.StringToHash("RangeAttack1Trigger");
         private readonly int _idleHash = Animator.StringToHash("Idle");
+        private readonly int _reviveTriggerHash = Animator.StringToHash("ReviveTrigger");
+        private readonly int _victory1TriggerHash = Animator.StringToHash("Victory1Trigger");
+        private readonly int _victory2TriggerHash = Animator.StringToHash("Victory2Trigger");
 
         // Tracking animation states internally since there are no direct parameters for these
         private bool _isAttacking = false;
@@ -96,7 +99,6 @@ namespace VoxelCommand.Client
 
         public void Initialize(Unit unit)
         {
-            Dispose();
             _unit = unit;
             _navMeshAgent = unit.GetComponent<NavMeshAgent>();
             _isDead = false;
@@ -212,6 +214,62 @@ namespace VoxelCommand.Client
             {
                 _navMeshAgent.isStopped = true;
                 _navMeshAgent.enabled = false;
+            }
+        }
+
+        /// <summary>
+        /// Reset the death state and play the revive animation if available
+        /// </summary>
+        public void PlayReviveAnimation()
+        {
+            // Reset death state
+            _isDead = false;
+            
+            // Try to play a revive animation if it exists
+            try
+            {
+                _animator.SetTrigger(_reviveTriggerHash);
+            }
+            catch (System.Exception)
+            {
+                // If revive animation doesn't exist, just set to idle
+                _animator.SetBool(_idleHash, true);
+            }
+            
+            // Ensure all other animation states are reset
+            _animator.SetBool(_runHash, false);
+            _animator.SetBool(_walkForwardHash, false);
+            
+            // Reset attack state
+            _isAttacking = false;
+        }
+
+        /// <summary>
+        /// Play a victory dance animation
+        /// </summary>
+        public void PlayVictoryAnimation()
+        {
+            if (_isDead || _animator == null)
+                return;
+                
+            // Randomly choose between the two victory animations
+            bool useFirstVictoryAnim = UnityEngine.Random.value > 0.5f;
+            
+            try
+            {
+                if (useFirstVictoryAnim)
+                {
+                    _animator.SetTrigger(_victory1TriggerHash);
+                }
+                else
+                {
+                    _animator.SetTrigger(_victory2TriggerHash);
+                }
+            }
+            catch (System.Exception)
+            {
+                // If victory animations don't exist, just set to idle
+                _animator.SetBool(_idleHash, true);
             }
         }
     }
