@@ -53,7 +53,7 @@ namespace VoxelCommand.Client
             }
             
             // Create 5 units on both sides
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 12; i++)
             {
                 SpawnUnit(null, Team.Player);
                 SpawnUnit(null, Team.Enemy);
