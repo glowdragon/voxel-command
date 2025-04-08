@@ -20,37 +20,18 @@ namespace VoxelCommand.Client
         private readonly ReactiveCollection<Unit> _units = new();
         public IReadOnlyReactiveCollection<Unit> Units => _units;
 
-        private readonly Subject<Unit> _onAnyUnitSkillPointGained = new();
-        public IObservable<Unit> OnAnyUnitSkillPointGained => _onAnyUnitSkillPointGained;
+        private void Start() { }
 
-        private void Awake()
-        {
-            _units
-                .ObserveAdd()
-                .Subscribe(evt =>
-                {
-                    var unit = evt.Value;
-                    unit.OnSkillPointGained.Subscribe(_onAnyUnitSkillPointGained.OnNext).AddTo(unit.Disposables).AddTo(_disposables);
-                })
-                .AddTo(_disposables);
-        }
-
-        protected override void OnDispose()
-        {
-            _onAnyUnitSkillPointGained.OnCompleted();
-            _onAnyUnitSkillPointGained.Dispose();
-            _units.Dispose();
-        }
-
-        public Unit CreateUnit(Vector3 position, Quaternion rotation, Team team, string name)
+        public Unit InstantiateUnit(Vector3 position, Quaternion rotation, Team team, string name)
         {
             Unit unit = _unitFactory.Create();
-            unit.name = name;
             unit.transform.SetPositionAndRotation(position, rotation);
             unit.Initialize(team == Team.Player ? _playerUnitConfig : _enemyUnitConfig, team, name);
 
+            // Add to the units list
             _units.Add(unit);
 
+            // Remove from the units list when the unit is destroyed
             unit.Disposables.Add(
                 Disposable.Create(() =>
                 {
@@ -62,6 +43,14 @@ namespace VoxelCommand.Client
             );
 
             return unit;
+        }
+
+        public void ReviveUnit(Unit unit)
+        {
+            unit.gameObject.SetActive(true);
+            unit.State.Health.Value = unit.State.MaxHealth.Value;
+            unit.Controller.ResetCombatState();
+            unit.Visuals.Animations.PlayReviveAnimation();
         }
     }
 }

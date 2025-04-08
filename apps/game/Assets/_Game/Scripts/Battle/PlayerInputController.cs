@@ -23,6 +23,7 @@ namespace VoxelCommand.Client
             {
                 _mainCamera = Camera.main;
             }
+            
             // Clear selection initially
             _selectedUnitController = null;
             _selectedUnit = null;
@@ -79,19 +80,19 @@ namespace VoxelCommand.Client
         {
             if (_selectedUnit != null && _selectedUnit != unit)
             {
-                _selectedUnit.IsSelected = false;
+                _selectedUnit.IsSelected.Value = false;
             }
 
             _selectedUnit = unit;
             _selectedUnitController = unit.Controller;
-            _selectedUnit.IsSelected = true;
+            _selectedUnit.IsSelected.Value = true;
         }
 
         private void DeselectUnit()
         {
             if (_selectedUnit != null)
             {
-                _selectedUnit.IsSelected = false;
+                _selectedUnit.IsSelected.Value = false;
             }
 
             _selectedUnitController = null;

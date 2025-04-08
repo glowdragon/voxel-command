@@ -45,7 +45,7 @@ namespace VoxelCommand.Client
 
         public float CalculateMaxHealth(UnitConfig config, UnitState state)
         {
-            return CalculateMaxHealth(config, state.HealthRank.Value);
+            return CalculateMaxHealth(config, state.HealthSkill.Value);
         }
 
         public float CalculateMaxHealth(UnitConfig config, int healthRank)
@@ -55,7 +55,7 @@ namespace VoxelCommand.Client
 
         public float CalculateDamageOutput(UnitConfig config, UnitState state)
         {
-            return CalculateDamageOutput(config, state.DamageRank.Value);
+            return CalculateDamageOutput(config, state.StrengthSkill.Value);
         }
 
         public float CalculateDamageOutput(UnitConfig config, int damageRank)
@@ -65,7 +65,7 @@ namespace VoxelCommand.Client
 
         public float CalculateIncomingDamageReduction(UnitConfig config, UnitState state)
         {
-            return CalculateIncomingDamageReduction(config, state.DefenseRank.Value);
+            return CalculateIncomingDamageReduction(config, state.DefenseSkill.Value);
         }
 
         public float CalculateIncomingDamageReduction(UnitConfig config, int defenseRank)
@@ -75,7 +75,7 @@ namespace VoxelCommand.Client
 
         public float CalculateMovementSpeed(UnitConfig config, UnitState state)
         {
-            return CalculateMovementSpeed(config, state.SpeedRank.Value);
+            return CalculateMovementSpeed(config, state.SpeedSkill.Value);
         }
 
         public float CalculateMovementSpeed(UnitConfig config, int speedRank)

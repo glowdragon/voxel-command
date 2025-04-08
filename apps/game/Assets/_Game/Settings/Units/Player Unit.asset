@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: Player Unit
   m_EditorClassIdentifier: 
   BaseExperience: 100
-  ExperienceGrowthFactor: 1.5
-  ExperiencePerDamage: 0.3
-  ExperiencePerKill: 25
-  BaseHealth: 100
+  ExperienceGrowthFactor: 1.8
+  ExperiencePerDamage: 0.15
+  ExperiencePerKill: 35
+  BaseHealth: 30
   HealthPerPoint: 10
-  BaseDamage: 10
-  DamagePerPoint: 2
+  BaseDamage: 13
+  DamagePerPoint: 3
   BaseDefense: 0
-  DefensePerPoint: 1
-  BaseSpeed: 3
-  SpeedPerPoint: 0.2
+  DefensePerPoint: 0.05
+  BaseSpeed: 4
+  SpeedPerPoint: 0.5

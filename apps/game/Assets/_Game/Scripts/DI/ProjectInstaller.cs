@@ -1,3 +1,4 @@
+using UniRx;
 using UnityEngine;
 using Zenject;
 
@@ -11,6 +12,7 @@ namespace VoxelCommand.Client
         public override void InstallBindings()
         {
             Container.Bind<INameGenerator>().FromInstance(_nameGenerator).AsSingle();
+            Container.Bind<IMessageBroker>().To<MessageBroker>().AsSingle();
             Container.Bind<IUnitStatsCalculator>().To<UnitStatsCalculator>().AsSingle();
         }
     }

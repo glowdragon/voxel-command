@@ -12,21 +12,17 @@ namespace VoxelCommand.Client
         private RoundManager _roundManager;
 
         [SerializeField]
-        private TeamManager _teamManager;
-
-        [SerializeField]
-        private UnitSpawner _unitSpawner;
-
-        [SerializeField]
         private CombatSystem _combatSystem;
+
+        [SerializeField]
+        private CombatLogManager _combatLogManager;
 
         public override void InstallBindings()
         {
             Container.BindInstance(_battleManager).AsSingle();
-            Container.BindInstance(_teamManager).AsSingle();
             Container.BindInstance(_roundManager).AsSingle();
-            Container.BindInstance(_unitSpawner).AsSingle();
             Container.BindInstance(_combatSystem).AsSingle();
+            Container.BindInstance(_combatLogManager).AsSingle();
         }
     }
 }

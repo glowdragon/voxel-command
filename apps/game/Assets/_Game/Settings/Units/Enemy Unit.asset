@@ -12,15 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e5a8fc61275dacd45acfa13caeb54137, type: 3}
   m_Name: Enemy Unit
   m_EditorClassIdentifier: 
-  BaseExperience: 100
+  BaseExperience: 90
   ExperienceGrowthFactor: 1.5
-  ExperiencePerDamage: 0.3
-  ExperiencePerKill: 25
-  BaseHealth: 100
-  HealthPerPoint: 10
+  ExperiencePerDamage: 0.15
+  ExperiencePerKill: 50
+  BaseHealth: 30
+  HealthPerPoint: 9
   BaseDamage: 10
-  DamagePerPoint: 2
+  DamagePerPoint: 4
   BaseDefense: 0
-  DefensePerPoint: 1
-  BaseSpeed: 3
-  SpeedPerPoint: 0.2
+  DefensePerPoint: 0.05
+  BaseSpeed: 3.5
+  SpeedPerPoint: 0.4

@@ -6,8 +6,11 @@ using Zenject;
 
 namespace VoxelCommand.Client
 {
-    public class UnitHudManager : DisposableMonoBehaviour
+    public class UnitHudUI : DisposableMonoBehaviour
     {
+        [Inject]
+        private UnitManager _unitManager;
+
         [Header("References")]
         [SerializeField]
         private Transform _playerUnitsContainer;
@@ -18,73 +21,55 @@ namespace VoxelCommand.Client
         [SerializeField]
         private GameObject _unitHudElementPrefab;
 
-        [Header("Settings")]
+        [Header("General Settings")]
+        [SerializeField]
+        private int _maxDisplayedUnits = 10;
+
+        [Header("Player Settings")]
         [SerializeField]
         private Sprite _playerAvatar;
-
-        [SerializeField]
-        private Sprite _enemyAvatar;
 
         [SerializeField]
         private Color _playerBorderColor = Color.blue;
 
         [SerializeField]
-        private Color _enemyBorderColor = Color.red;
-
-        [SerializeField]
         private Color _playerBackgroundColor = Color.blue;
-
-        [SerializeField]
-        private Color _enemyBackgroundColor = Color.red;
 
         [SerializeField]
         private Color _playerDarkBackgroundColor = Color.black;
 
         [SerializeField]
-        private Color _enemyDarkBackgroundColor = Color.black;
+        private Color _playerHealthColor = Color.blue;
+
+        [Header("Enemy Settings")]
+        [SerializeField]
+        private Sprite _enemyAvatar;
 
         [SerializeField]
-        private Color _playerHealthColor = Color.blue;
+        private Color _enemyBorderColor = Color.red;
+
+        [SerializeField]
+        private Color _enemyBackgroundColor = Color.red;
+
+        [SerializeField]
+        private Color _enemyDarkBackgroundColor = Color.black;
 
         [SerializeField]
         private Color _enemyHealthColor = Color.red;
 
-        [SerializeField]
-        private int _maxDisplayedUnits = 10;
-
-        [Inject]
-        private TeamManager _teamManager;
-
-        private Dictionary<Unit, UnitHudElement> _unitHudElements = new Dictionary<Unit, UnitHudElement>();
+        private Dictionary<Unit, UnitHudElement> _unitHudElements = new();
 
         private void Start()
         {
             // Subscribe to changes in team composition instead of polling every frame
-            _teamManager.Team1Units.ObserveAdd()
-                .Subscribe(addEvent => AddUnitToHud(addEvent.Value, Team.Player))
-                .AddTo(_disposables);
+            _unitManager.Units.ObserveAdd().Subscribe(e => AddUnitToHud(e.Value)).AddTo(_disposables);
 
-            _teamManager.Team1Units.ObserveRemove()
-                .Subscribe(removeEvent => RemoveUnitFromHud(removeEvent.Value))
-                .AddTo(_disposables);
-
-            _teamManager.Team2Units.ObserveAdd()
-                .Subscribe(addEvent => AddUnitToHud(addEvent.Value, Team.Enemy))
-                .AddTo(_disposables);
-
-            _teamManager.Team2Units.ObserveRemove()
-                .Subscribe(removeEvent => RemoveUnitFromHud(removeEvent.Value))
-                .AddTo(_disposables);
+            _unitManager.Units.ObserveRemove().Subscribe(e => RemoveUnitFromHud(e.Value)).AddTo(_disposables);
 
             // Initial setup of HUD elements for existing units
-            foreach (var unit in _teamManager.Team1Units)
+            foreach (var unit in _unitManager.Units)
             {
-                AddUnitToHud(unit, Team.Player);
-            }
-
-            foreach (var unit in _teamManager.Team2Units)
-            {
-                AddUnitToHud(unit, Team.Enemy);
+                AddUnitToHud(unit);
             }
         }
 
@@ -92,15 +77,20 @@ namespace VoxelCommand.Client
         {
             if (_unitHudElements.TryGetValue(unit, out var hudElement))
             {
-                Destroy(hudElement.gameObject);
+                if (hudElement != null)
+                {
+                    Destroy(hudElement.gameObject);
+                }
                 _unitHudElements.Remove(unit);
             }
         }
 
-        private void AddUnitToHud(Unit unit, Team team)
+        private void AddUnitToHud(Unit unit)
         {
+            Team team = unit.Team;
+
             // Choose the appropriate container based on team
-            Transform container = team == Team.Player ? _playerUnitsContainer : _enemyUnitsContainer;
+            Transform container = unit.Team == Team.Player ? _playerUnitsContainer : _enemyUnitsContainer;
 
             // Check if we've reached the maximum displayed units for this team
             if (container.childCount >= _maxDisplayedUnits)

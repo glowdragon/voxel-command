@@ -1,63 +1,28 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace VoxelCommand.Client
 {
     /// <summary>
-    /// Interface for name generation services
-    /// </summary>
-    public interface INameGenerator
-    {
-        /// <summary>
-        /// Generates a random name based on the unit's team
-        /// </summary>
-        /// <param name="team">The team for which to generate a name</param>
-        /// <returns>A random name</returns>
-        string GetRandomName(Team team);
-
-        /// <summary>
-        /// Generates a name with a numeric suffix if needed for uniqueness
-        /// </summary>
-        /// <param name="team">The team for which to generate a name</param>
-        /// <returns>A unique name, possibly with a numeric suffix</returns>
-        string GetUniqueName(Team team);
-
-        /// <summary>
-        /// Releases a name back to the pool so it can be reused
-        /// </summary>
-        /// <param name="team">The team the name belongs to</param>
-        /// <param name="name">The name to release</param>
-        void ReleaseName(Team team, string name);
-    }
-
-    /// <summary>
     /// Provides random name generation for units
     /// </summary>
     public class NameGenerator : MonoBehaviour, INameGenerator
     {
-        [SerializeField] private NameList _playerNameList;
-        [SerializeField] private NameList _enemyNameList;
+        [SerializeField]
+        private NameList _playerNameList;
+
+        [SerializeField]
+        private NameList _enemyNameList;
 
         private Dictionary<Team, List<string>> _namesByTeam;
-        private Dictionary<Team, HashSet<string>> _usedNames;
-
-        private void Awake()
-        {
-            InitializeNameLists();
-        }
 
         private void InitializeNameLists()
         {
-            _namesByTeam = new Dictionary<Team, List<string>> 
-            { 
-                { Team.Player, _playerNameList.Names }, 
-                { Team.Enemy, _enemyNameList.Names } 
-            };
-
-            _usedNames = new Dictionary<Team, HashSet<string>>
+            _namesByTeam = new Dictionary<Team, List<string>>
             {
-                { Team.Player, new HashSet<string>() },
-                { Team.Enemy, new HashSet<string>() },
+                { Team.Player, _playerNameList.Names },
+                { Team.Enemy, _enemyNameList.Names },
             };
         }
 
@@ -69,72 +34,50 @@ namespace VoxelCommand.Client
         public string GetRandomName(Team team)
         {
             if (_namesByTeam == null)
-            {
                 InitializeNameLists();
-            }
 
             List<string> teamNames = _namesByTeam[team];
-            HashSet<string> usedTeamNames = _usedNames[team];
-
-            // If all names are used, reset the used names collection
-            if (usedTeamNames.Count >= teamNames.Count)
-            {
-                usedTeamNames.Clear();
-            }
-
-            // Find an unused name
-            string name;
-            do
-            {
-                int randomIndex = Random.Range(0, teamNames.Count);
-                name = teamNames[randomIndex];
-            } while (usedTeamNames.Contains(name));
-
-            // Mark as used
-            usedTeamNames.Add(name);
-            return name;
+            int randomIndex = Random.Range(0, teamNames.Count);
+            return teamNames[randomIndex];
         }
 
         /// <summary>
         /// Generates a name with a numeric suffix if needed for uniqueness
         /// </summary>
         /// <param name="team">The team for which to generate a name</param>
+        /// <param name="allUnits">List of all existing units to check for name conflicts</param>
         /// <returns>A unique name, possibly with a numeric suffix</returns>
-        public string GetUniqueName(Team team)
+        public string GetUniqueName(Team team, IEnumerable<Unit> allUnits)
         {
+            if (_namesByTeam == null)
+                InitializeNameLists();
+
+            // Get the set of names currently in use by existing units
+            HashSet<string> usedNames = allUnits.Select(u => u.Name).ToHashSet();
+
+            // Try to find an unused name from the list
+            List<string> teamNames = _namesByTeam[team];
+            List<string> availableNames = teamNames.Where(name => !usedNames.Contains(name)).ToList();
+
+            // If we have available names, pick one randomly
+            if (availableNames.Count > 0)
+            {
+                int randomIndex = Random.Range(0, availableNames.Count);
+                return availableNames[randomIndex];
+            }
+
+            // All names are taken, add a numeric suffix
             string baseName = GetRandomName(team);
+            string uniqueName;
+            int suffix = 2;
 
-            // Check if we need to add a number suffix for further uniqueness
-            if (IsTeamNameFull(team))
+            do
             {
-                int suffix = Random.Range(1, 100);
-                return $"{baseName}-{suffix}";
-            }
+                uniqueName = $"{baseName} {suffix}";
+                suffix++;
+            } while (usedNames.Contains(uniqueName) && suffix < 1000);
 
-            return baseName;
-        }
-
-        private bool IsTeamNameFull(Team team)
-        {
-            return _usedNames[team].Count >= _namesByTeam[team].Count * 0.75f;
-        }
-
-        /// <summary>
-        /// Releases a name back to the pool so it can be reused
-        /// </summary>
-        /// <param name="team">The team the name belongs to</param>
-        /// <param name="name">The name to release</param>
-        public void ReleaseName(Team team, string name)
-        {
-            // Extract base name if it has a numeric suffix
-            string baseName = name;
-            int dashIndex = name.LastIndexOf('-');
-            if (dashIndex >= 0)
-            {
-                baseName = name.Substring(0, dashIndex);
-            }
-
-            _usedNames[team].Remove(baseName);
+            return uniqueName;
         }
     }
 }

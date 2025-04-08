@@ -820,6 +820,7 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   scriptingDefineSymbols:
+    Standalone: PRIME_TWEEN_SAFETY_CHECKS
     WebGL: 
   additionalCompilerArguments: {}
   platformArchitecture: {}

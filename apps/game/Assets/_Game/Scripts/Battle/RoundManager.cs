@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UniRx;
 using UnityEngine;
 using Zenject;
@@ -9,13 +8,16 @@ namespace VoxelCommand.Client
     public class RoundManager : MonoBehaviour
     {
         [Inject]
-        private SkillPointAllocationManager _skillPointAllocationManager;
+        private IMessageBroker _messageBroker;
+
+        [SerializeField]
+        private bool _startRoundOnStart = true;
 
         [Header("Config")]
-        [SerializeField]
+        [SerializeField, Tooltip("The delay before the first round starts")]
         private float _roundStartDelay = 1f;
 
-        [SerializeField]
+        [SerializeField, Tooltip("The delay before the next round starts")]
         private float _roundTransitionDelay = 3f;
 
         [Header("State")]
@@ -23,45 +25,35 @@ namespace VoxelCommand.Client
         private IntReactiveProperty _currentRound = new(0);
         public IntReactiveProperty CurrentRound => _currentRound;
 
-        public Subject<int> OnRoundStarted { get; } = new();
-        public Subject<int> OnRoundCompleted { get; } = new();
-
-        /// <summary>
-        /// Starts the next round
-        /// </summary>
-        public void StartNextRound()
+        private void Start()
         {
-            _currentRound.Value++;
-            if (_currentRound.Value == 1)
+            if (_startRoundOnStart)
             {
-                Observable.Timer(TimeSpan.FromSeconds(_roundStartDelay)).Subscribe(_ => OnRoundStarted.OnNext(_currentRound.Value));
-            }
-            else
-            {
-                Observable.Timer(TimeSpan.FromSeconds(_roundTransitionDelay)).Subscribe(_ => OnRoundStarted.OnNext(_currentRound.Value));
+                StartFirstRound();
             }
         }
 
-        /// <summary>
-        /// Called when a battle round is completed
-        /// TODO: Use UniRx
-        /// </summary>
-        public IEnumerator HandleRoundOver_Co()
+        public void StartFirstRound()
         {
-            yield return new WaitForSeconds(0.2f);
+            _currentRound.Value = 1;
+            StartRoundIn(_currentRound.Value, _roundStartDelay);
+        }
 
-            // Notify subscribers that round is complete
-            OnRoundCompleted.OnNext(_currentRound.Value);
+        public void StartNextRound()
+        {
+            _currentRound.Value++;
+            StartRoundIn(_currentRound.Value, _roundTransitionDelay);
+        }
 
-            // Wait for skills to be allocated if needed
-            if (_skillPointAllocationManager.IsBusy.Value)
-            {
-                Debug.Log("Delaying round restart until skill allocation completes");
-                yield return new WaitUntil(() => !_skillPointAllocationManager.IsBusy.Value);
-                Debug.Log("Skill allocation complete, continuing to next round");
-            }
+        private void StartRoundIn(int round, float delay)
+        {
+            Observable.Timer(TimeSpan.FromSeconds(delay)).Subscribe(_ => _messageBroker.Publish(new RoundStartedEvent(round)));
+        }
 
-            StartNextRound();
+        public void CompleteRound(Team winningTeam)
+        {
+            _messageBroker.Receive<SkillPointAllocationCompletedEvent>().Take(1).Subscribe(_ => StartNextRound());
+            _messageBroker.Publish(new RoundCompletedEvent(_currentRound.Value, winningTeam));
         }
     }
 }

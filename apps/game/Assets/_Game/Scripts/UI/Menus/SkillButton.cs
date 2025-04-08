@@ -37,11 +37,11 @@ namespace VoxelCommand.Client
         private Subject<UniRx.Unit> _onClicked = new();
         public IObservable<UniRx.Unit> OnClicked => _onClicked;
 
-        private StatType _statType;
+        private SkillType _statType;
         private RectTransform _rectTransform;
         private Color _originalColor;
 
-        public void Initialize(StatType statType)
+        public void Initialize(SkillType statType)
         {
             _statType = statType;
             _button.OnClickAsObservable().Subscribe(_onClicked).AddTo(this);
@@ -63,7 +63,7 @@ namespace VoxelCommand.Client
 
         public void SetInfo(Unit unit)
         {
-            int currentRank = unit.State.GetStatRank(_statType);
+            int currentRank = unit.State.GetSkillLevel(_statType);
             int newRank = currentRank + 1;
 
             // Set the stat info showing current and upgraded values
@@ -74,17 +74,17 @@ namespace VoxelCommand.Client
             _text.text = $"{statName}\n\n{currentRank} → {newRank}\n\n{currentValue:F1} → {newValue:F1}";
         }
 
-        private float CalculateStatValue(UnitConfig config, StatType statType, int rank)
+        private float CalculateStatValue(UnitConfig config, SkillType statType, int rank)
         {
             switch (statType)
             {
-                case StatType.Health:
+                case SkillType.Health:
                     return _unitStatsCalculator.CalculateMaxHealth(config, rank);
-                case StatType.Damage:
+                case SkillType.Strength:
                     return _unitStatsCalculator.CalculateDamageOutput(config, rank);
-                case StatType.Defense:
+                case SkillType.Defense:
                     return _unitStatsCalculator.CalculateIncomingDamageReduction(config, rank);
-                case StatType.Speed:
+                case SkillType.Speed:
                     return _unitStatsCalculator.CalculateMovementSpeed(config, rank);
                 default:
                     Debug.LogError($"Unknown stat type: {statType}");
@@ -162,13 +162,5 @@ namespace VoxelCommand.Client
             
             SetInteractable(true);
         }
-    }
-
-    public enum StatType
-    {
-        Health,
-        Damage,
-        Defense,
-        Speed,
     }
 }

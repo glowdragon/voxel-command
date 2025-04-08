@@ -1,5 +1,7 @@
-using UniRx;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using UniRx;
 using UnityEngine;
 using Zenject;
 
@@ -8,129 +10,106 @@ namespace VoxelCommand.Client
     public class SkillPointAllocationManager : MonoBehaviour
     {
         [Inject]
-        private UnitManager _unitManager;
+        private IMessageBroker _messageBroker;
 
         [Inject]
-        private BattleManager _battleManager;
+        private UnitManager _unitManager;
 
         [SerializeField]
-        private SkillSelectionMenu _skillSelectionMenu;
-        
+        private SkillSelectionUI _skillSelectionMenu;
+
         private Queue<Unit> _pendingUnits = new Queue<Unit>();
-        private bool _isProcessingQueue = false;
-        
-        private ReactiveProperty<bool> _isBusy = new ReactiveProperty<bool>(false);
-        public IReadOnlyReactiveProperty<bool> IsBusy => _isBusy;
-        
-        public void Awake()
+
+        public void Start()
         {
-            _unitManager.OnAnyUnitSkillPointGained.Subscribe(OnAnyUnitSkillPointGained);
+            _messageBroker
+                .Receive<RoundCompletedEvent>()
+                .Subscribe(_ => Observable.Timer(TimeSpan.FromSeconds(5f)).Subscribe(_ => StartSkillPointAllocation()).AddTo(this));
         }
 
-        private void OnAnyUnitSkillPointGained(Unit unit) 
-        {
-            // If the unit is on the enemy team, assign random skills automatically
-            if (unit.Team == Team.Enemy)
-            {
-                AllocateRandomSkillsForEnemy(unit);
-                return;
-            }
-            
-            // For player units, add them to the queue for player selection
-            _pendingUnits.Enqueue(unit);
-            
-            // If we're not already showing a menu, start processing the queue
-            if (!_isProcessingQueue)
-            {
-                StartProcessingQueue();
-            }
-        }
-        
-        /// <summary>
-        /// Automatically allocates random skills for enemy units
-        /// </summary>
-        private void AllocateRandomSkillsForEnemy(Unit unit)
-        {
-            // Keep allocating skills until the unit has no more skill points to spend
-            while (unit.State.AvailableStatPoints.Value > 0)
-            {
-                // Random number between 0 and 3 to pick a skill
-                int randomSkill = UnityEngine.Random.Range(0, 4);
-                
-                // Assign the skill based on the random number
-                switch (randomSkill)
-                {
-                    case 0:
-                        unit.AllocatePointToHealth();
-                        break;
-                    case 1:
-                        unit.AllocatePointToDamage();
-                        break;
-                    case 2:
-                        unit.AllocatePointToDefense();
-                        break;
-                    case 3:
-                        unit.AllocatePointToSpeed();
-                        break;
-                }
-            }
-            
-            // Debug log to show what skills were allocated (can be removed in production)
-            Debug.Log($"Enemy {unit.name} automatically allocated skills - Health: {unit.State.HealthRank.Value}, " +
-                     $"Damage: {unit.State.DamageRank.Value}, Defense: {unit.State.DefenseRank.Value}, " +
-                     $"Speed: {unit.State.SpeedRank.Value}");
-        }
-        
         /// <summary>
         /// Starts processing the queue of units waiting for skill selection
         /// </summary>
-        private void StartProcessingQueue()
+        private void StartSkillPointAllocation()
         {
+            foreach (var unit in _unitManager.Units)
+            {
+                if (unit.Team == Team.Player)
+                {
+                    for (int i = 0; i < unit.State.AvailableSkillPoints.Value; i++)
+                    {
+                        _pendingUnits.Enqueue(unit);
+                    }
+                }
+                else if (unit.Team == Team.Enemy)
+                {
+                    SpendSkillPointsRandomly(unit, unit.State.AvailableSkillPoints.Value);
+                }
+            }
+
+            Debug.Log($"Starting skill point allocation for {_pendingUnits.Count} units");
+
             if (_pendingUnits.Count == 0)
+            {
+                CompleteSkillPointAllocation();
                 return;
-                
-            _isProcessingQueue = true;
-            
+            }
+
+            // Publish event that skill point allocation has started
+            _messageBroker.Publish(new SkillPointAllocationStartedEvent(_pendingUnits.Count));
+
             // Fade in the background at the start of processing
             _skillSelectionMenu.FadeInBackground();
-            
+
             // Process the first unit
             ProcessNextUnit();
         }
-        
+
         private void ProcessNextUnit()
         {
             // If there are no more units to process, we're done
             if (_pendingUnits.Count == 0)
             {
-                FinishProcessingQueue();
+                CompleteSkillPointAllocation();
                 return;
             }
-            
-            // Signal that skill allocation is in progress to delay round restart
-            _isBusy.Value = true;
-            
+
             Unit nextUnit = _pendingUnits.Dequeue();
-            
+
             // Show the menu for this unit
             _skillSelectionMenu.Show(nextUnit);
-            
+
             // Subscribe to when the menu is closed so we can process the next unit
             _skillSelectionMenu.OnMenuClosed.Take(1).Subscribe(_ => ProcessNextUnit());
         }
-        
+
         /// <summary>
         /// Finishes processing the queue and cleans up
         /// </summary>
-        private void FinishProcessingQueue()
+        private void CompleteSkillPointAllocation()
         {
-            _isProcessingQueue = false;
-            
-            // Fade out the background when we're done with all units
             _skillSelectionMenu.FadeOutBackground();
-            
-            // Signal that skill allocation is complete
-            _isBusy.Value = false;
+            _messageBroker.Publish(new SkillPointAllocationCompletedEvent());
+        }
+
+        /// <summary>
+        /// Automatically allocates a skill point to a random stat for the given unit
+        /// </summary>
+        private void SpendSkillPointsRandomly(Unit unit, int limit = -1)
+        {
+            int pointsToSpend =
+                limit == -1 ? unit.State.AvailableSkillPoints.Value : Mathf.Min(limit, unit.State.AvailableSkillPoints.Value);
+
+            // Keep allocating skills until we've spent the desired number of points
+            while (pointsToSpend > 0 && unit.State.AvailableSkillPoints.Value > 0)
+            {
+                var statTypes = unit.State.Skills.Keys.ToList();
+                var randomStatType = statTypes[UnityEngine.Random.Range(0, statTypes.Count)];
+                unit.State.Skills[randomStatType].Value++;
+                unit.State.AvailableSkillPoints.Value--;
+                pointsToSpend--;
+                Debug.Log($"Spent skill point on {randomStatType} for {unit.Name}");
+            }
         }
     }
 }

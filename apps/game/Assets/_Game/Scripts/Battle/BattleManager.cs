@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Linq;
 using UniRx;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,17 +9,8 @@ namespace VoxelCommand.Client
 {
     public class BattleManager : MonoBehaviour
     {
-        [SerializeField]
-        private Transform _navMeshSurfaceObject;
-
-        [SerializeField]
-        private int _allyBaseCount = 2;
-
-        [SerializeField]
-        private int _enemyBaseCount = 1;
-
         [Inject]
-        private UnitManager _unitManager;
+        private IMessageBroker _messageBroker;
 
         [Inject]
         private RoundManager _roundManager;
@@ -30,123 +21,91 @@ namespace VoxelCommand.Client
         [Inject]
         private UnitSpawner _unitSpawner;
 
-        [Inject]
-        private ExperienceManager _experienceManager;
+        [SerializeField]
+
+
+        private int _allyBaseCount = 2;
 
         [SerializeField]
-        private CombatSystem _combatSystem;
+        private int _enemyBaseCount = 1;
 
-        public void Start()
+        public void Awake()
         {
-            _roundManager.OnRoundStarted.Subscribe(OnRoundStarted).AddTo(this);
-            _teamManager.OnTeamVictory.Subscribe(OnTeamVictory).AddTo(this);
-            _teamManager.OnGameOver.Subscribe(OnGameOver).AddTo(this);
-
-            // Start first round
-            Observable.NextFrame().Subscribe(_ => _roundManager.StartNextRound()).AddTo(this);
+            _messageBroker.Receive<RoundStartedEvent>().Subscribe(OnRoundStarted).AddTo(this);
+            _messageBroker.Receive<UnitDeathEvent>().Subscribe(OnUnitDeath).AddTo(this);
+            _messageBroker.Receive<RoundCompletedEvent>().Subscribe(OnRoundCompleted).AddTo(this);
         }
 
         /// <summary>
         /// Handles the start of a new round
         /// </summary>
-        private void OnRoundStarted(int round)
+        private void OnRoundStarted(RoundStartedEvent e)
         {
             // Calculate how many units to spawn
             (int alliesToHave, int enemiesToHave) = _teamManager.CalculateTeamSizes(
                 _teamManager.MaxTeamSize,
                 _allyBaseCount,
                 _enemyBaseCount,
-                round
+                e.RoundNumber
             );
 
-            Debug.Log($"Starting Round {round}: Target {alliesToHave} allies and {enemiesToHave} enemies");
-
-            // Revive existing player units without repositioning
+            // Revive existing player units
             _teamManager.ReviveTeam(Team.Player);
 
             // Spawn additional player units if needed
-            int currentAllies = _teamManager.Team1Units.Count;
+            int currentAllies = _teamManager.PlayerUnits.Count;
             int alliesToSpawn = Mathf.Max(0, alliesToHave - currentAllies);
-
-            Debug.Log($"Reviving {currentAllies} allies, spawning {alliesToSpawn} allies");
-
-            // Spawn any additional allies needed at spawn points
             for (int i = 0; i < alliesToSpawn; i++)
             {
                 _unitSpawner.SpawnUnit(Team.Player);
             }
 
-            // Instead of clearing enemies, revive existing ones without repositioning
+            // Revive existing enemy units
             _teamManager.ReviveTeam(Team.Enemy);
 
             // Determine how many additional enemies to spawn
-            int currentEnemies = _teamManager.Team2Units.Count;
+            int currentEnemies = _teamManager.EnemyUnits.Count;
             int enemiesToSpawn = Mathf.Max(0, enemiesToHave - currentEnemies);
-
-            Debug.Log($"Reviving {currentEnemies} enemies, spawning {enemiesToSpawn} enemies");
-
-            // Spawn additional enemies as needed at spawn points
             for (int i = 0; i < enemiesToSpawn; i++)
             {
                 _unitSpawner.SpawnUnit(Team.Enemy);
             }
 
-            
-            // Wait 1 second before starting combat
-            Observable.Timer(TimeSpan.FromSeconds(1)).Subscribe(_ =>
-            {
-                // Use the target positions if they're set, otherwise use opposing spawn positions
-                Vector3 team1Target = _teamManager.Team2SpawnPoint.position;
-                Vector3 team2Target = _teamManager.Team1SpawnPoint.position;
-
-                // Order teams to move toward each other
-                _teamManager.MoveTeamTo(Team.Player, team1Target);
-                _teamManager.MoveTeamTo(Team.Enemy, team2Target);
-
-                Debug.Log($"Round {_roundManager.CurrentRound.Value} - Battle started - teams engaging!");
-            }).AddTo(this);
+            // Move teams to each other's spawn points
+            Observable
+                .Timer(TimeSpan.FromSeconds(2))
+                .Subscribe(_ =>
+                {
+                    _teamManager.MoveTeamTo(Team.Player, _teamManager.EnemySpawn.position);
+                    _teamManager.MoveTeamTo(Team.Enemy, _teamManager.PlayerSpawn.position);
+                })
+                .AddTo(this);
         }
 
         /// <summary>
-        /// Handles team victory
+        /// Checks if one team has won
         /// </summary>
-        private void OnTeamVictory(Team team)
+        private void OnUnitDeath(UnitDeathEvent e)
         {
-            StartCoroutine(HandleVictory_Co(team));
-        }
+            // Count alive units
+            int aliveTeam1 = _teamManager.PlayerUnits.Count(unit => unit.State.IsAlive);
+            int aliveTeam2 = _teamManager.EnemyUnits.Count(unit => unit.State.IsAlive);
 
-        private IEnumerator HandleVictory_Co(Team team)
-        {
-            yield return new WaitForSeconds(2.5f);
-
-            // Have winning team celebrate
-            _teamManager.CelebrateVictory(team);
-
-            yield return new WaitForSeconds(0.2f);
-
-            // Award XP and prepare for next round
-            _experienceManager.AwardExperience();
-
-            // Start the round transition process
-            StartCoroutine(_roundManager.HandleRoundOver_Co());
-        }
-
-        /// <summary>
-        /// Handles game over state
-        /// </summary>
-        /// <param name="victory">True if player won the game, false if defeated</param>
-        private void OnGameOver(bool victory)
-        {
-            if (victory)
+            // Declare winner if one team is eliminated
+            if (aliveTeam1 <= 0)
             {
-                // For now, just log the message
-                Debug.Log("Congratulations! You completed the run!");
+                Observable.NextFrame().Subscribe(_ => _roundManager.CompleteRound(Team.Enemy));
             }
-            else
+            else if (aliveTeam2 <= 0)
             {
-                Debug.Log("Your army was defeated! Game Over! You survived {_roundManager.CurrentRound.Value} rounds");
+                Observable.NextFrame().Subscribe(_ => _roundManager.CompleteRound(Team.Player));
+            }
+        }
 
-                // Restart the game after a short delay
+        private void OnRoundCompleted(RoundCompletedEvent e)
+        {
+            if (e.WinningTeam == Team.Enemy)
+            {
                 Observable.Timer(TimeSpan.FromSeconds(3)).Subscribe(_ => RestartGame()).AddTo(this);
             }
         }
@@ -156,7 +115,6 @@ namespace VoxelCommand.Client
         /// </summary>
         private void RestartGame()
         {
-            Debug.Log("Restarting game...");
             Scene currentScene = SceneManager.GetActiveScene();
             SceneManager.LoadScene(currentScene.name);
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UniRx;
 using UnityEngine;
 
@@ -8,12 +9,13 @@ namespace VoxelCommand.Client
     {
         public IntReactiveProperty Experience = new(0);
         public IntReactiveProperty Level = new(1);
-        public IntReactiveProperty AvailableStatPoints = new(0);
+        public IntReactiveProperty AvailableSkillPoints = new(0);
 
-        public IntReactiveProperty HealthRank = new(0);
-        public IntReactiveProperty DamageRank = new(0);
-        public IntReactiveProperty DefenseRank = new(0);
-        public IntReactiveProperty SpeedRank = new(0);
+        public Dictionary<SkillType, IntReactiveProperty> Skills = new();
+        public IntReactiveProperty HealthSkill = new(0);
+        public IntReactiveProperty StrengthSkill = new(0);
+        public IntReactiveProperty DefenseSkill = new(0);
+        public IntReactiveProperty SpeedSkill = new(0);
 
         public FloatReactiveProperty MaxHealth = new(1);
         public FloatReactiveProperty DamageOutput = new(1);
@@ -21,28 +23,22 @@ namespace VoxelCommand.Client
         public FloatReactiveProperty MovementSpeed = new(1);
 
         public FloatReactiveProperty Health = new(1);
+        public ReactiveProperty<Unit> LastAttacker = new();
 
-        // Battle statistics
-        public FloatReactiveProperty DamageDealt = new(0);
-        public IntReactiveProperty Kills = new(0);
-
+        public bool IsAlive => Health.Value > 0;
         public bool IsDead => Health.Value <= 0;
 
-        public int GetStatRank(StatType statType)
+        private void Awake()
         {
-            switch (statType)
-            {
-                case StatType.Health:
-                    return HealthRank.Value;
-                case StatType.Damage:
-                    return DamageRank.Value;
-                case StatType.Defense:
-                    return DefenseRank.Value;
-                case StatType.Speed:
-                    return SpeedRank.Value;
-                default:
-                    throw new NotImplementedException();
-            }
+            Skills.Add(SkillType.Health, HealthSkill);
+            Skills.Add(SkillType.Strength, StrengthSkill);
+            Skills.Add(SkillType.Defense, DefenseSkill);
+            Skills.Add(SkillType.Speed, SpeedSkill);
+        }
+
+        public int GetSkillLevel(SkillType statType)
+        {
+            return Skills[statType].Value;
         }
     }
 }

@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using System.Linq;
+using UniRx;
 using UnityEngine;
 using Zenject;
 
@@ -8,39 +7,33 @@ namespace VoxelCommand.Client
     public class ExperienceManager : MonoBehaviour
     {
         [Inject]
-        private UnitManager _unitManager;
+        private IMessageBroker _messageBroker;
 
-        /// <summary>
-        /// Awards experience to all units based on their performance
-        /// </summary>
-        public void AwardExperience()
+        private void Start()
         {
-            AwardExperienceToUnits(_unitManager.Units.ToList());
+            // Award experience for attacks
+            _messageBroker
+                .Receive<UnitDamagedEvent>()
+                .Subscribe(e => AwardExperienceForAttack(e.SourceUnit, e.TargetUnit, e.DamageAmount));
+
+            // Award experience for kills
+            _messageBroker //
+                .Receive<UnitDeathEvent>()
+                .Subscribe(e => AwardExperienceForKill(e.Killer, e.Victim));
         }
 
-        /// <summary>
-        /// Awards experience to all units based on their performance
-        /// </summary>
-        private void AwardExperienceToUnits(List<Unit> units)
+        private void AwardExperienceForAttack(Unit attacker, Unit target, float damageAmount)
         {
-            foreach (Unit unit in units)
-            {
-                if (unit != null)
-                {
-                    // Calculate XP based on damage dealt and kills
-                    int damageXp = Mathf.RoundToInt(unit.State.DamageDealt.Value * 0.5f);
-                    int killXp = unit.State.Kills.Value * 100;
-                    int totalXp = damageXp + killXp;
+            var victimLevel = target.State.Level.Value;
+            var xp = Mathf.RoundToInt(attacker.Config.ExperiencePerDamage * damageAmount * victimLevel);
+            attacker.State.Experience.Value += xp;
+        }
 
-                    // Award XP
-                    unit.AddExperience(totalXp);
-
-                    Debug.Log($"{unit.name} earned {totalXp} XP (Damage: {unit.State.DamageDealt.Value}, Kills: {unit.State.Kills.Value})");
-
-                    // Reset stats for next round
-                    unit.ResetBattleStats();
-                }
-            }
+        private void AwardExperienceForKill(Unit killer, Unit victim)
+        {
+            var victimLevel = victim.State.Level.Value;
+            var xp = Mathf.RoundToInt(killer.Config.ExperiencePerKill * victimLevel);
+            killer.State.Experience.Value += xp;
         }
     }
-} 
+}
