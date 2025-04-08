@@ -77,10 +77,17 @@ namespace VoxelCommand.Client
         {
             foreach (Unit unit in teamUnits)
             {
+                // Skip dead units or units without controllers
                 if (unit == null || unit.Controller == null || unit.State.Health.Value <= 0)
                     continue;
 
                 UnitController controller = unit.Controller;
+
+                // --- Skip AI if unit is under manual control ---
+                if (controller.IsUnderManualControl)
+                {
+                    continue; // Let the manual command complete
+                }
 
                 // Always find the nearest enemy
                 Unit nearestEnemy = controller.FindNearestEnemy(opposingTeamUnits);

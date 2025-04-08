@@ -11,6 +11,7 @@ namespace VoxelCommand.Client
         private Unit _unit;
         private readonly List<Vector3> _currentPath = new();
         private bool _isMoving;
+        private bool _isUnderManualControl; // Added for player commands
 
         [SerializeField]
         private UnitAnimationController _animationController;
@@ -42,6 +43,9 @@ namespace VoxelCommand.Client
         public bool IsInCombat { get; private set; }
         public Unit CurrentTarget => _currentTarget;
 
+        // Flag to indicate manual control
+        public bool IsUnderManualControl => _isUnderManualControl;
+
         [Inject]
         private IPathfindingService _pathfindingService;
 
@@ -54,6 +58,7 @@ namespace VoxelCommand.Client
             _lastAttackTime = 0f;
             IsInCombat = false;
             _currentTarget = null;
+            _isUnderManualControl = false; // Initialize flag
 
             _animationController.Initialize(_unit);
         }
@@ -72,8 +77,21 @@ namespace VoxelCommand.Client
             }
 
             _isMoving = true;
+            // Ensure stopping distance is appropriate for general movement
+            _navMeshAgent.stoppingDistance = _destinationReachedThreshold;
             _navMeshAgent.SetDestination(destination);
             return true;
+        }
+
+        // Method for player-issued move commands
+        public bool ManualMoveToPosition(Vector3 destination)
+        {
+            Debug.Log($"[{_unit.name}] Received manual move command to {destination}");
+            _isUnderManualControl = true;
+            IsInCombat = false; // Break combat
+            _currentTarget = null; // Clear target
+            StopMoving(); // Stop current path/action
+            return MoveToPosition(destination); // Start new move
         }
 
         public bool MoveToRandomPositionNear(Vector3 center, float radius)
@@ -217,30 +235,70 @@ namespace VoxelCommand.Client
 
         private void Update()
         {
-            if (_unit == null || !_navMeshAgent.enabled)
-                return;
-
-            // Check if we've reached the destination for movement logic
-            if (_isMoving && !_navMeshAgent.pathPending && _navMeshAgent.remainingDistance <= _destinationReachedThreshold)
+            // Don't update if unit is dead
+            if (_unit == null || _unit.State.Health.Value <= 0)
             {
-                _isMoving = false;
+                return;
             }
 
-            // Combat logic
-            if (IsInCombat)
+            // Handle Manual Movement Completion
+            if (_isUnderManualControl && _isMoving)
             {
-                // If target is invalid, stop combat
-                if (!IsTargetValid())
+                // Check if the agent has reached the destination set by manual command
+                if (!_navMeshAgent.pathPending && _navMeshAgent.remainingDistance <= _navMeshAgent.stoppingDistance)
                 {
+                    Debug.Log($"[{_unit.name}] Reached manual destination.");
+                    StopMoving(); // Important to reset _isMoving flag
+                    _isUnderManualControl = false; // Allow AI to take over again
+                    // No need to find a target here, CombatSystem's AI loop will handle it
+                }
+                // If manually moving, skip AI combat/targeting logic below
+                return;
+            }
+
+            // --- Existing AI/Combat Logic --- (Ensure this runs only if NOT under manual control)
+            if (!_isUnderManualControl)
+            {
+                // If in combat, prioritize attacking or moving towards target
+                if (IsInCombat && IsTargetValid())
+                {
+                    float distanceToTarget = Vector3.Distance(transform.position, _currentTarget.transform.position);
+
+                    // If target is in range, attack
+                    if (distanceToTarget <= _attackRange)
+                    {
+                        StopMoving(); // Stop moving when in attack range
+                        AttackTarget();
+                    }
+                    // If target is not in range, move towards them
+                    else
+                    {
+                        // Update destination only periodically or if path is invalid
+                        if (!_navMeshAgent.hasPath || _navMeshAgent.isPathStale || Time.frameCount % 10 == 0) // Example check
+                        {
+                            MoveToPosition(_currentTarget.transform.position);
+                        }
+                    }
+                }
+                else
+                {
+                    // No longer in combat or target is invalid, reset combat state
                     IsInCombat = false;
                     _currentTarget = null;
-                    _navMeshAgent.stoppingDistance = 0.1f; // Reset stopping distance
-                    return;
-                }
+                    // Reset stopping distance to default movement threshold when not engaging
+                    _navMeshAgent.stoppingDistance = _destinationReachedThreshold;
 
-                // Attack if possible
-                AttackTarget();
+                    // If we were moving (_isMoving will be true from MoveToPosition call),
+                    // check if we have arrived at a non-combat destination.
+                    if (_isMoving && !_navMeshAgent.pathPending && _navMeshAgent.remainingDistance <= _navMeshAgent.stoppingDistance)
+                    {
+                        StopMoving();
+                    }
+                }
             }
+
+            // Update Animations (regardless of manual control, should reflect current state)
+            // _animationController.UpdateAnimations(_isMoving, IsInCombat); // Removed: UnitAnimationController updates movement itself
         }
 
         /// <summary>
@@ -248,28 +306,15 @@ namespace VoxelCommand.Client
         /// </summary>
         public void ResetCombatState()
         {
-            // Clear combat flags
+            StopMoving();
             _currentTarget = null;
             IsInCombat = false;
+            _isUnderManualControl = false; // Ensure manual control is reset on round changes/revival
             _lastAttackTime = 0f;
-            
-            // Stop any navigation in progress
-            if (_navMeshAgent != null)
-            {
-                // Re-enable the NavMeshAgent if it was disabled (e.g., when the unit died)
-                _navMeshAgent.enabled = true;
-                
-                _navMeshAgent.ResetPath();
-                _navMeshAgent.isStopped = true;
-                _navMeshAgent.isStopped = false;
-                _navMeshAgent.stoppingDistance = 0.1f;
-            }
-            
-            _isMoving = false;
-            
-            // Play revive animation if the unit was dead
+            _navMeshAgent.stoppingDistance = _destinationReachedThreshold;
             if (_animationController != null)
             {
+                // _animationController.ResetState(); // Replaced with PlayReviveAnimation
                 _animationController.PlayReviveAnimation();
             }
         }

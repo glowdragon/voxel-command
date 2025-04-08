@@ -2,6 +2,7 @@
 using UniRx;
 using UnityEngine;
 using Zenject;
+using MiniTools.BetterGizmos;
 
 namespace VoxelCommand.Client
 {
@@ -31,6 +32,22 @@ namespace VoxelCommand.Client
         private string _name;
         public string Name => _name;
 
+        private bool _isSelected;
+        public bool IsSelected 
+        { 
+            get => _isSelected;
+            set
+            {
+                if (_isSelected != value)
+                {
+                    _isSelected = value;
+                    OnSelectionChanged?.Invoke(this, value);
+                }
+            }
+        }
+
+        public event Action<Unit, bool> OnSelectionChanged;
+
         private readonly Subject<Unit> _onSkillPointGained = new();
         public IObservable<Unit> OnSkillPointGained => _onSkillPointGained;
         
@@ -39,6 +56,24 @@ namespace VoxelCommand.Client
             _config = config;
             _team = team;
             _name = name;
+
+            // Set the GameObject layer based on the team
+            string layerName = _team == Team.Player ? "PlayerUnit" : "EnemyUnit";
+            int layer = LayerMask.NameToLayer(layerName);
+            if (layer == -1)
+            {
+                Debug.LogWarning($"Layer '{layerName}' not found. Please define it in the Unity Tag Manager.");
+            }
+            else
+            {
+                gameObject.layer = layer;
+                // also all children
+                foreach (Transform child in transform)
+                {
+                    child.gameObject.layer = layer;
+                }
+            }
+
             if (_controller != null)
             {
                 _controller.Initialize(this);
@@ -196,6 +231,16 @@ namespace VoxelCommand.Client
         public bool IsAlly(Unit otherUnit)
         {
             return _team == otherUnit.Team;
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (IsSelected)
+            {
+                // Draw a circle around the unit when selected
+                Color selectionColor = _team == Team.Player ? Color.cyan : Color.yellow;
+                BetterGizmos.DrawCircle2D(selectionColor, transform.position, Vector3.up, 1.5f);
+            }
         }
     }
 }
