@@ -41,6 +41,7 @@ namespace VoxelCommand.Client
                 if (_isSelected != value)
                 {
                     _isSelected = value;
+                    _visuals.SetSelected(value);
                     OnSelectionChanged?.Invoke(this, value);
                 }
             }

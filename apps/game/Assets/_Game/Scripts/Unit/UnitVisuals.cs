@@ -29,6 +29,9 @@ namespace VoxelCommand.Client
         [SerializeField]
         private TextMeshProUGUI _nameText;
 
+        [SerializeField]
+        private QuickOutline _outline;
+
         private Unit _unit;
         private Transform _cameraTransform;
 
@@ -40,6 +43,11 @@ namespace VoxelCommand.Client
             ApplyTeamVisuals();
             SetupNameDisplay();
             SetupSubscriptions();
+        }
+
+        public void SetSelected(bool selected)
+        {
+            _outline.enabled = selected;
         }
 
         private void SetupSubscriptions()
