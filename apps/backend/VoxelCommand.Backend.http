@@ -1,6 +1,6 @@
-@VoxelCommand.Backend_HostAddress = http://localhost:5098
+@HostAddress = http://localhost:5098
 
-GET {{VoxelCommand.Backend_HostAddress}}/weatherforecast/
+GET {{HostAddress}}/
 Accept: application/json
 
 ###
