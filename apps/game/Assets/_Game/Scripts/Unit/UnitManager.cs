@@ -41,12 +41,13 @@ namespace VoxelCommand.Client
             _activeUnits.Dispose();
         }
 
-        public Unit CreateUnit(Vector3 position, Quaternion rotation, Team team, UnitConfig config = null)
+        public Unit CreateUnit(Vector3 position, Quaternion rotation, Team team, string name, UnitConfig config = null)
         {
             Unit unit = _unitFactory.Create();
+            unit.name = name;
             unit.transform.position = position;
             unit.transform.rotation = rotation;
-            unit.Initialize(config ?? _defaultUnitConfig, team);
+            unit.Initialize(config ?? _defaultUnitConfig, team, name);
             
             _activeUnits.Add(unit);
             

@@ -25,26 +25,47 @@ namespace VoxelCommand.Client
         
         [SerializeField]
         private GameObject _worldspaceCanvas;
+        
+        [SerializeField]
+        private TextMeshProUGUI _nameText;
 
         private Unit _unit;
+        private Transform _cameraTransform;
 
         public void Initialize(Unit unit)
         {
             _unit = unit;
+            _cameraTransform = Camera.main.transform;
 
             ApplyTeamVisuals();
-            
-            // Disable the worldspace UI since we'll show it in the HUD
-            if (_worldspaceCanvas != null)
-            {
-                _worldspaceCanvas.SetActive(false);
-            }
+            SetupNameDisplay();
+            SetupSubscriptions();
         }
 
         private void SetupSubscriptions()
         {
             // We're not setting up the health and level subscriptions
             // since they'll be displayed in the HUD instead
+        }
+
+        private void SetupNameDisplay()
+        {
+            if (_worldspaceCanvas != null && _nameText != null)
+            {
+                _worldspaceCanvas.SetActive(true);
+                _nameText.text = _unit.name;
+            }
+        }
+        
+        private void LateUpdate()
+        {
+            if (_worldspaceCanvas != null && _cameraTransform != null)
+            {
+                // Billboard the canvas to always face the camera
+                _worldspaceCanvas.transform.LookAt(
+                    _worldspaceCanvas.transform.position + _cameraTransform.rotation * Vector3.forward,
+                    _cameraTransform.rotation * Vector3.up);
+            }
         }
 
         private void UpdateHealthBar()

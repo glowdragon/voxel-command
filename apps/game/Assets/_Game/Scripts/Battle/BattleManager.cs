@@ -277,7 +277,8 @@ namespace VoxelCommand.Client
             }
 
             // Use UnitManager to create unit at the spawn position
-            Unit unit = _unitManager.CreateUnit(spawnPosition, Quaternion.identity, team, config);
+            string name = _nameGenerator.GetUniqueName(team);
+            Unit unit = _unitManager.CreateUnit(spawnPosition, Quaternion.identity, team, name, config);
 
             if (unit == null)
             {
@@ -289,12 +290,10 @@ namespace VoxelCommand.Client
             if (team == Team.Player)
             {
                 _team1Units.Add(unit);
-                unit.name = _nameGenerator.GetUniqueName(team);
             }
             else
             {
                 _team2Units.Add(unit);
-                unit.name = _nameGenerator.GetUniqueName(team);
             }
 
             // Subscribe to unit's health for death detection
@@ -399,7 +398,7 @@ namespace VoxelCommand.Client
 
             // Award XP and prepare for next round
             AwardExperience();
-            
+
             // Wait for skills to be allocated if needed
             if (_isWaitingForSkillAllocation)
             {
@@ -407,7 +406,7 @@ namespace VoxelCommand.Client
                 yield return new WaitUntil(() => !_isWaitingForSkillAllocation);
                 Debug.Log("Skill allocation complete, continuing to next round");
             }
-            
+
             yield return new WaitForSeconds(_roundTransitionDelay);
             StartNextRound();
         }

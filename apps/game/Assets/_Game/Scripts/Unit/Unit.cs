@@ -28,14 +28,17 @@ namespace VoxelCommand.Client
         private Team _team;
         public Team Team => _team;
 
+        private string _name;
+        public string Name => _name;
+
         private readonly Subject<Unit> _onSkillPointGained = new();
         public IObservable<Unit> OnSkillPointGained => _onSkillPointGained;
         
-        public void Initialize(UnitConfig config, Team team)
+        public void Initialize(UnitConfig config, Team team, string name)
         {
             _config = config;
             _team = team;
-
+            _name = name;
             if (_controller != null)
             {
                 _controller.Initialize(this);
