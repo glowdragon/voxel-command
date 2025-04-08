@@ -16,7 +16,7 @@ MonoBehaviour:
   ExperienceGrowthFactor: 1.5
   ExperiencePerDamage: 0.3
   ExperiencePerKill: 250
-  BaseHealth: 30
+  BaseHealth: 1
   HealthPerPoint: 10
   BaseDamage: 10
   DamagePerPoint: 2

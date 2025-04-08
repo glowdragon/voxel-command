@@ -4,6 +4,7 @@ using UniRx;
 using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
+using PrimeTween;
 
 namespace VoxelCommand.Client
 {
@@ -20,16 +21,44 @@ namespace VoxelCommand.Client
 
         [SerializeField]
         private TextMeshProUGUI _text;
+        
+        [SerializeField]
+        private Image _buttonImage;
+        
+        [SerializeField]
+        private float _highlightDuration = 0.3f;
+        
+        [SerializeField]
+        private float _fadeOutDuration = 0.5f;
+        
+        [SerializeField]
+        private Color _highlightColor = Color.green;
 
         private Subject<UniRx.Unit> _onClicked = new();
         public IObservable<UniRx.Unit> OnClicked => _onClicked;
 
         private StatType _statType;
+        private RectTransform _rectTransform;
+        private Color _originalColor;
 
         public void Initialize(StatType statType)
         {
             _statType = statType;
             _button.OnClickAsObservable().Subscribe(_onClicked).AddTo(this);
+            _rectTransform = GetComponent<RectTransform>();
+            
+            if (_buttonImage != null)
+            {
+                _originalColor = _buttonImage.color;
+            }
+            else
+            {
+                _buttonImage = GetComponent<Image>();
+                if (_buttonImage != null)
+                {
+                    _originalColor = _buttonImage.color;
+                }
+            }
         }
 
         public void SetInfo(Unit unit)
@@ -66,6 +95,72 @@ namespace VoxelCommand.Client
         public void SetInteractable(bool interactable)
         {
             _button.interactable = interactable;
+        }
+        
+        /// <summary>
+        /// Highlights the button and fades it out
+        /// </summary>
+        public void HighlightAndFadeOut()
+        {
+            if (_buttonImage == null) return;
+            
+            Sequence sequence = Sequence.Create();
+            
+            // First highlight with a color change
+            sequence.Chain(Tween.Color(target: _buttonImage, endValue: _highlightColor, duration: _highlightDuration));
+            
+            // Then fade out
+            sequence.Chain(Tween.Alpha(target: _buttonImage, endValue: 0f, duration: _fadeOutDuration));
+            
+            // Disable button
+            SetInteractable(false);
+        }
+        
+        /// <summary>
+        /// Makes the button fall down
+        /// </summary>
+        public void FallDown(float delay = 0f, float duration = 0.5f)
+        {
+            if (_rectTransform == null) return;
+            
+            Vector2 startPosition = _rectTransform.anchoredPosition;
+            Vector2 endPosition = new Vector2(startPosition.x, startPosition.y - 300f); // Fall down by 300 units
+            
+            Tween.Position(
+                target: _rectTransform, 
+                endValue: endPosition, 
+                duration: duration,
+                ease: Ease.InCubic,
+                startDelay: delay
+            );
+            
+            // Fade out while falling
+            if (_buttonImage != null)
+            {
+                Tween.Alpha(target: _buttonImage, endValue: 0f, duration: duration, startDelay: delay);
+            }
+            
+            // Disable button
+            SetInteractable(false);
+        }
+        
+        /// <summary>
+        /// Resets the button visual state
+        /// </summary>
+        public void ResetVisuals()
+        {
+            if (_buttonImage != null)
+            {
+                _buttonImage.color = _originalColor;
+            }
+            
+            if (_rectTransform != null)
+            {
+                Vector2 position = _rectTransform.anchoredPosition;
+                _rectTransform.anchoredPosition = new Vector2(position.x, 0);
+            }
+            
+            SetInteractable(true);
         }
     }
 

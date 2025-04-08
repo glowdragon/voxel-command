@@ -39,7 +39,7 @@ namespace VoxelCommand.Client
             // If we're not already showing a menu, start processing the queue
             if (!_isProcessingQueue)
             {
-                ProcessNextUnit();
+                StartProcessingQueue();
             }
         }
         
@@ -78,21 +78,35 @@ namespace VoxelCommand.Client
                      $"Speed: {unit.State.SpeedRank.Value}");
         }
         
+        /// <summary>
+        /// Starts processing the queue of units waiting for skill selection
+        /// </summary>
+        private void StartProcessingQueue()
+        {
+            if (_pendingUnits.Count == 0)
+                return;
+                
+            _isProcessingQueue = true;
+            
+            // Fade in the background at the start of processing
+            _skillSelectionMenu.FadeInBackground();
+            
+            // Process the first unit
+            ProcessNextUnit();
+        }
+        
         private void ProcessNextUnit()
         {
             // If there are no more units to process, we're done
             if (_pendingUnits.Count == 0)
             {
-                _isProcessingQueue = false;
-                // No more units to process, signal that skill allocation is complete
-                _battleManager.SetWaitingForSkillAllocation(false);
+                FinishProcessingQueue();
                 return;
             }
             
             // Signal that skill allocation is in progress to delay round restart
             _battleManager.SetWaitingForSkillAllocation(true);
             
-            _isProcessingQueue = true;
             Unit nextUnit = _pendingUnits.Dequeue();
             
             // Show the menu for this unit
@@ -100,6 +114,20 @@ namespace VoxelCommand.Client
             
             // Subscribe to when the menu is closed so we can process the next unit
             _skillSelectionMenu.OnMenuClosed.Take(1).Subscribe(_ => ProcessNextUnit());
+        }
+        
+        /// <summary>
+        /// Finishes processing the queue and cleans up
+        /// </summary>
+        private void FinishProcessingQueue()
+        {
+            _isProcessingQueue = false;
+            
+            // Fade out the background when we're done with all units
+            _skillSelectionMenu.FadeOutBackground();
+            
+            // Signal that skill allocation is complete
+            _battleManager.SetWaitingForSkillAllocation(false);
         }
     }
 }

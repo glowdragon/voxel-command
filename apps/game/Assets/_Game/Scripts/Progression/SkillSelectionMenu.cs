@@ -19,6 +19,7 @@ namespace VoxelCommand.Client
         [SerializeField] private Transform _skillButtonsContainer;
         [SerializeField] private Button _skillButtonPrefab;
         [SerializeField] private float _animationDuration = 0.3f;
+        [SerializeField] private Image _backgroundImage;
         
         [Header("Unit Info")]
         [SerializeField] private TextMeshProUGUI _unitNameText;
@@ -41,6 +42,12 @@ namespace VoxelCommand.Client
         {
             _rootPanel.SetActive(false);
             
+            if (_backgroundImage != null)
+            {
+                _backgroundImage.gameObject.SetActive(false);
+                _backgroundImage.color = new Color(_backgroundImage.color.r, _backgroundImage.color.g, _backgroundImage.color.b, 0f);
+            }
+            
             // Create skill buttons
             CreateSkillButton(StatType.Health, unit => unit.State.HealthRank.Value++);
             CreateSkillButton(StatType.Damage, unit => unit.State.DamageRank.Value++);
@@ -61,17 +68,75 @@ namespace VoxelCommand.Client
             {
                 if (_currentUnit != null)
                 {
+                    // Apply the skill upgrade
                     onSkillSelected(_currentUnit);
                     _currentUnit.State.AvailableStatPoints.Value--;
                     
+                    // Highlight and fade out the clicked button
+                    skillButton.HighlightAndFadeOut();
+                    
+                    // Make other buttons fall down with increasing delays
+                    float delayIncrement = 0.1f;
+                    float currentDelay = 0f;
+                    foreach (var otherButton in _skillButtons)
+                    {
+                        if (otherButton != skillButton)
+                        {
+                            currentDelay += delayIncrement;
+                            otherButton.FallDown(currentDelay);
+                        }
+                    }
+                    
+                    // Hide the menu after all animations are done (after a delay)
                     if (_currentUnit.State.AvailableStatPoints.Value <= 0)
                     {
-                        Hide();
+                        // Longest duration will be fadeOutDuration + the last button's delay
+                        float totalDelay = currentDelay + 0.2f; // Add a bit extra for fade out duration
+                        Tween.Delay(totalDelay).OnComplete(Hide);
+                    }
+                    else
+                    {
+                        // Wait for animations to finish before resetting other buttons
+                        float totalDelay = currentDelay + 0.7f;
+                        Tween.Delay(totalDelay).OnComplete(() => {
+                            foreach (var otherButton in _skillButtons)
+                            {
+                                if (otherButton != skillButton)
+                                {
+                                    otherButton.ResetVisuals();
+                                    otherButton.SetInfo(_currentUnit);
+                                }
+                            }
+                        });
                     }
                 }
             });
             
             _skillButtons.Add(skillButton);
+        }
+
+        /// <summary>
+        /// Fades in the background image
+        /// </summary>
+        public void FadeInBackground()
+        {
+            if (_backgroundImage != null)
+            {
+                _backgroundImage.gameObject.SetActive(true);
+                Tween.Alpha(target: _backgroundImage, endValue: 0.7f, duration: _animationDuration);
+            }
+        }
+
+        /// <summary>
+        /// Fades out the background image
+        /// </summary>
+        public void FadeOutBackground()
+        {
+            if (_backgroundImage != null)
+            {
+                Tween.Alpha(target: _backgroundImage, endValue: 0f, duration: _animationDuration)
+                    .OnComplete(() => _backgroundImage.gameObject.SetActive(false));
+            }
         }
 
         /// <summary>
@@ -89,18 +154,24 @@ namespace VoxelCommand.Client
             // Display unit info and stats
             SetupUnitDisplay();
             
-            // Animate the menu appearance
-            var rectTransform = _rootPanel.GetComponent<RectTransform>();
+            // Get the CanvasGroup component or add it if not present
+            var canvasGroup = _rootPanel.GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = _rootPanel.AddComponent<CanvasGroup>();
+            }
             
-            // Start with zero scale
-            rectTransform.localScale = Vector3.zero;
+            // Start with zero alpha
+            canvasGroup.alpha = 0f;
             
-            // Animate to full scale with a bounce effect
-            Tween.Scale(target: rectTransform, endValue: Vector3.one, duration: _animationDuration, ease: Ease.OutBack);
+            // Animate fade in
+            Tween.Alpha(target: canvasGroup, endValue: 1f, duration: _animationDuration);
             
             // Update button states
             foreach (var button in _skillButtons)
             {
+                // Reset any previous animations
+                button.ResetVisuals();
                 button.SetInfo(_currentUnit);
                 button.SetInteractable(true);
             }
@@ -140,13 +211,23 @@ namespace VoxelCommand.Client
             }
             _statSubscriptions.Clear();
             
-            // Animate the menu disappearance
-            var rectTransform = _rootPanel.GetComponent<RectTransform>();
+            // Get the CanvasGroup component or add it if not present
+            var canvasGroup = _rootPanel.GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = _rootPanel.AddComponent<CanvasGroup>();
+            }
             
-            Tween.Scale(target: rectTransform, endValue: Vector3.zero, duration: _animationDuration, ease: Ease.InBack)
+            // Make sure it's fully visible at start
+            canvasGroup.alpha = 1f;
+            
+            // Animate fade out
+            Tween.Alpha(target: canvasGroup, endValue: 0f, duration: _animationDuration)
                 .OnComplete(() => 
                 {
                     _rootPanel.SetActive(false);
+                    // Reset scale to ensure it's ready for next time
+                    _rootPanel.GetComponent<RectTransform>().localScale = Vector3.one;
                     // Trigger the OnMenuClosed event with the unit that was shown
                     OnMenuClosed.OnNext(currentUnit);
                 });
