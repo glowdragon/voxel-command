@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.InputSystem; // Using the new Input System
+using UnityEngine.InputSystem;
 
 namespace VoxelCommand.Client
 {
@@ -8,14 +8,14 @@ namespace VoxelCommand.Client
         [SerializeField]
         private Camera _mainCamera;
 
-        [SerializeField]
-        private LayerMask _unitLayerMask; // Layer for selectable units (Player team)
+        [SerializeField, Tooltip("Layer for selectable units")]
+        private LayerMask _unitLayerMask;
 
-        [SerializeField]
-        private LayerMask _groundLayerMask; // Layer for walkable ground (NavMesh)
+        [SerializeField, Tooltip("Layer for walkable ground")]
+        private LayerMask _groundLayerMask;
 
         private UnitController _selectedUnitController;
-        private Unit _selectedUnit; // Keep track of the selected Unit too
+        private Unit _selectedUnit;
 
         private void Awake()
         {
@@ -30,90 +30,72 @@ namespace VoxelCommand.Client
 
         private void Update()
         {
-            HandleLeftClick();
-            HandleRightClick();
+            if (Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                HandleLeftClick();
+            }
+            if (Mouse.current.rightButton.wasPressedThisFrame)
+            {
+                HandleRightClick();
+            }
         }
 
         private void HandleLeftClick()
         {
-            // Check if the left mouse button was clicked this frame
-            if (Mouse.current.leftButton.wasPressedThisFrame)
+            Ray ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            if (Physics.Raycast(ray, out RaycastHit hit, 100f, _unitLayerMask))
             {
-                Ray ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-                if (Physics.Raycast(ray, out RaycastHit hit, 100f, _unitLayerMask))
+                // Check if the hit object has a Unit component and belongs to the Player team
+                Unit unit = hit.collider.GetComponentInParent<Unit>(); // Get Unit component from parent if collider is child
+                if (unit != null && unit.Team == Team.Player)
                 {
-                    // Check if the hit object has a Unit component and belongs to the Player team
-                    Unit unit = hit.collider.GetComponentInParent<Unit>(); // Get Unit component from parent if collider is child
-                    if (unit != null && unit.Team == Team.Player)
-                    {
-                        SelectUnit(unit);
-                    }
-                    else
-                    {
-                        DeselectUnit();
-                    }
+                    SelectUnit(unit);
                 }
                 else
                 {
-                    // Clicked somewhere else, deselect
                     DeselectUnit();
                 }
+            }
+            else
+            {
+                // Clicked somewhere else, deselect
+                DeselectUnit();
             }
         }
 
         private void HandleRightClick()
         {
-            // Check if a unit is selected and the right mouse button was clicked
-            if (_selectedUnitController != null && Mouse.current.rightButton.wasPressedThisFrame)
-            {
-                Ray ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-                // Raycast against the ground layer
-                if (Physics.Raycast(ray, out RaycastHit hit, 200f, _groundLayerMask))
-                {
-                    // Issue a manual move command to the selected unit
-                    Debug.Log($"Commanding {_selectedUnit.name} to move to {hit.point}");
-                     _selectedUnitController.ManualMoveToPosition(hit.point);
+            if (_selectedUnitController == null)
+                return;
 
-                    // Optional: Deselect unit after issuing command?
-                    // DeselectUnit();
-                }
+            Ray ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            if (Physics.Raycast(ray, out RaycastHit hit, 200f, _groundLayerMask))
+            {
+                _selectedUnitController.ManualMoveToPosition(hit.point);
             }
         }
 
         private void SelectUnit(Unit unit)
         {
-            if (unit.Controller != null)
+            if (_selectedUnit != null && _selectedUnit != unit)
             {
-                 // Deselect previous unit
-                if (_selectedUnit != null && _selectedUnit != unit)
-                {
-                     _selectedUnit.IsSelected = false; // Set IsSelected to false for the old unit
-                    Debug.Log($"Deselected {_selectedUnit.name}");
-                }
+                _selectedUnit.IsSelected = false;
+            }
 
-                // Select the new unit
-                _selectedUnit = unit;
-                _selectedUnitController = unit.Controller;
-                _selectedUnit.IsSelected = true; // Set IsSelected to true for the new unit
-                Debug.Log($"Selected {_selectedUnit.name}");
-            }
-            else {
-                Debug.LogWarning($"Clicked unit {unit.name} has no UnitController.");
-                DeselectUnit();
-            }
+            _selectedUnit = unit;
+            _selectedUnitController = unit.Controller;
+            _selectedUnit.IsSelected = true;
         }
 
         private void DeselectUnit()
         {
-            // Deselect previous unit
             if (_selectedUnit != null)
             {
-                _selectedUnit.IsSelected = false; // Set IsSelected to false
-                Debug.Log($"Deselected {_selectedUnit.name}");
+                _selectedUnit.IsSelected = false;
             }
 
             _selectedUnitController = null;
             _selectedUnit = null;
         }
     }
-} 
+}

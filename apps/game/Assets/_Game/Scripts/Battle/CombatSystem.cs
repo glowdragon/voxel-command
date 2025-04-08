@@ -1,11 +1,16 @@
 using System.Collections.Generic;
+using DanielKreitsch;
 using UniRx;
 using UnityEngine;
+using Zenject;
 
 namespace VoxelCommand.Client
 {
-    public class CombatSystem : DisposableComponent
+    public class CombatSystem : DisposableMonoBehaviour
     {
+        [Inject]
+        private TeamManager _teamManager;
+
         [SerializeField, Tooltip("Time between AI updates")]
         private float _aiUpdateInterval = 1f;
 
@@ -15,21 +20,6 @@ namespace VoxelCommand.Client
         [SerializeField, Tooltip("Chance per AI update to reconsider target")]
         private float _retargetProbability = 0.1f;
 
-        [SerializeField, Tooltip("Toggle for AI")]
-        private bool _aiEnabled = true;
-
-        private BattleManager _battleManager;
-
-        private void Awake()
-        {
-            _battleManager = GetComponent<BattleManager>();
-            if (_battleManager == null)
-            {
-                Debug.LogError("BattleManager not found on CombatSystem's GameObject");
-                enabled = false;
-            }
-        }
-
         private void Start()
         {
             SetupAiUpdateInterval();
@@ -37,18 +27,7 @@ namespace VoxelCommand.Client
 
         private void SetupAiUpdateInterval()
         {
-            // Dispose any existing subscriptions
-            _disposables.Clear();
-
-            if (_aiEnabled)
-            {
-                // Create an Observable that emits every _aiUpdateInterval seconds
-                Observable
-                    .Interval(System.TimeSpan.FromSeconds(_aiUpdateInterval))
-                    .Where(_ => _aiEnabled) // Only proceed if AI is enabled
-                    .Subscribe(_ => UpdateAI())
-                    .AddTo(_disposables);
-            }
+            Observable.Interval(System.TimeSpan.FromSeconds(_aiUpdateInterval)).Subscribe(_ => UpdateAI()).AddTo(_disposables);
         }
 
         private void OnEnable()
@@ -66,14 +45,14 @@ namespace VoxelCommand.Client
         /// </summary>
         private void UpdateAI()
         {
-            UpdateTeamAI(_battleManager.GetPlayerUnits(), _battleManager.GetEnemyUnits());
-            UpdateTeamAI(_battleManager.GetEnemyUnits(), _battleManager.GetPlayerUnits());
+            UpdateTeamAI(_teamManager.Team1Units, _teamManager.Team2Units);
+            UpdateTeamAI(_teamManager.Team2Units, _teamManager.Team1Units);
         }
 
         /// <summary>
         /// Updates AI for a specific team, targeting units from the opposing team
         /// </summary>
-        private void UpdateTeamAI(List<Unit> teamUnits, List<Unit> opposingTeamUnits)
+        private void UpdateTeamAI(IEnumerable<Unit> teamUnits, IEnumerable<Unit> opposingTeamUnits)
         {
             foreach (Unit unit in teamUnits)
             {

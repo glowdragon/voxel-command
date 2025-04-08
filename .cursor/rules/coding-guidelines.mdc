@@ -3,17 +3,6 @@ description:
 globs: 
 alwaysApply: true
 ---
-This project is a strategic battle prototype where two opposing teams of units battle for survival.
-
-# Key Game Elements
-
-- Units: Two teams of units that navigate the environment and engage in combat
-- NavMesh: Units use Unity's NavMesh system for movement and pathfinding
-- Combat System: Automatic targeting within specified distance thresholds
-- Progression: Units level up to upgrade combat stats
-- Player Interaction: LLM integration
-
-# Technical Specifications
 
 ## Development Environment
 - Engine: Unity 6
