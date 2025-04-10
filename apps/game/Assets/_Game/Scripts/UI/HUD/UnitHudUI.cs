@@ -131,13 +131,13 @@ namespace VoxelCommand.Client
                 {
                     hudElement.SetHealth(unit.State.Health.Value, unit.State.MaxHealth.Value);
                 })
-                .AddTo(_disposables);
+                .AddTo(unit);
 
             unit.State.Level.Subscribe(level =>
                 {
                     hudElement.SetLevel(level);
                 })
-                .AddTo(_disposables);
+                .AddTo(unit);
 
             // Store the HUD element in the dictionary
             _unitHudElements.Add(unit, hudElement);
